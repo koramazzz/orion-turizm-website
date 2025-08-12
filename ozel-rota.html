@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Özel Rota Talebi - Orion Turizm</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html">Ana Sayfa</a>
+          <a href="#" id="navRoutes" class="active">Rotalar</a>
+          <a href="#" id="navStudent">Öğrenci Servisi</a>
+          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container narrow">
+          <h1>Özel Rota İstiyorum</h1>
+          <p class="muted"><strong>24 saat içinde</strong> size dönüş yapacağız. Aşağıdaki formu doldurmanız yeterli.</p>
+
+          <form class="form" id="customRouteForm">
+            <div class="form-grid">
+              <label>
+                Ad Soyad
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                E-posta
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Grup Kimliği
+                <input type="text" name="groupId" placeholder="Örn: Ailesi / Kurum" />
+              </label>
+              <label>
+                Telefon
+                <input type="tel" name="phone" required />
+              </label>
+              <label class="full">
+                Ziyaret etmek istediğiniz yerler ve programınız hakkında
+                <textarea name="plan" rows="3" placeholder="Örn: İstanbul – Kapadokya, 2 gün müze, 1 gün serbest zaman..."></textarea>
+              </label>
+              <label>
+                Başlangıç Tarihi
+                <input type="date" name="start" required />
+              </label>
+              <label>
+                Bitiş Tarihi
+                <input type="date" name="end" required />
+              </label>
+              <label>
+                Rehberlik Dili
+                <select name="lang" required>
+                  <option value="TR">Türkçe</option>
+                  <option value="EN">İngilizce</option>
+                  <option value="AR">Arapça</option>
+                </select>
+              </label>
+              <label>
+                Katılımcı Sayısı
+                <input type="number" name="people" min="1" value="4" required />
+              </label>
+              <label>
+                Otel Lüksü (0-5)
+                <div class="range-wrap">
+                  <input type="range" min="0" max="5" step="1" value="3" name="hotel" />
+                  <output>3</output>
+                </div>
+              </label>
+              <label class="full">
+                İsteğe Bağlı Not
+                <textarea name="notes" rows="3" placeholder="Özel istekler, sınırlamalar vb."></textarea>
+              </label>
+            </div>
+            <button class="btn btn-primary" type="submit">Talebi Gönder</button>
+            <p class="form-status" id="customRouteStatus" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="routes.html">Hazır Rotalar</a>
+          <a href="ozel-rota.html">Özel Rota</a>
+          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
+          <a href="hakkimizda.html">Hakkımızda</a>
+          <a href="iletisim.html">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <!-- Seçim Modalları -->
+    <div class="modal" id="routesModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Rota Seçimi</h3>
+        <div class="modal-actions">
+          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="studentModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Okul Seçin</h3>
+        <label>Okul
+          <select id="schoolSelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Koleji">Orion Koleji</option>
+            <option value="Sakarya Lisesi">Sakarya Lisesi</option>
+            <option value="Ada Koleji">Ada Koleji</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoStudent">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+  </html>
+
+

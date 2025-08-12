@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tur Detayı - Orion Turizm</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html">Ana Sayfa</a>
+          <a href="#" id="navRoutes" class="active">Rotalar</a>
+          <a href="#" id="navStudent">Öğrenci Servisi</a>
+          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container">
+          <h1 id="tourTitle">Tur Detayı</h1>
+          <p class="muted" id="tourSubtitle">Örnek program ve görseller aşağıdadır.</p>
+
+          <div class="two-col" style="align-items:start;margin-top:12px">
+            <div class="visual-card" style="min-height:320px">
+              <div class="visual-bg" id="mapImage" style="--bg:url('https://images.unsplash.com/photo-1468109320504-ff0cd3d2d0fc?q=80&w=1200&auto=format&fit=crop')"></div>
+            </div>
+            <div>
+              <div class="gallery" id="tourGallery">
+                <img alt="foto1" />
+                <img alt="foto2" />
+                <img alt="foto3" />
+              </div>
+            </div>
+          </div>
+
+          <div class="itinerary" id="itinerary" style="margin-top:20px">
+            <h2>Tur Programı</h2>
+            <ol>
+              <li>Gün 1: Varış ve şehir turu</li>
+              <li>Gün 2: Bölge gezileri ve serbest zaman</li>
+              <li>Gün 3: Dönüş</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="routes.html">Hazır Rotalar</a>
+          <a href="ozel-rota.html">Özel Rota</a>
+          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
+          <a href="hakkimizda.html">Hakkımızda</a>
+          <a href="iletisim.html">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <!-- Seçim Modalları -->
+    <div class="modal" id="routesModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Rota Seçimi</h3>
+        <div class="modal-actions">
+          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="studentModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Okul Seçin</h3>
+        <label>Okul
+          <select id="schoolSelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Koleji">Orion Koleji</option>
+            <option value="Sakarya Lisesi">Sakarya Lisesi</option>
+            <option value="Ada Koleji">Ada Koleji</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoStudent">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+  </html>
+
+

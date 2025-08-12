@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>İletişim - Orion Turizm</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html">Ana Sayfa</a>
+          <a href="#" id="navRoutes">Rotalar</a>
+          <a href="#" id="navStudent">Öğrenci Servisi</a>
+          <a class="active btn btn-primary" href="iletisim.html">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container two-col">
+          <div>
+            <h1>İletişim</h1>
+            <p class="muted">Size yardımcı olmaktan memnuniyet duyarız.</p>
+            <ul class="contact-list">
+              <li><strong>Telefon:</strong> 0 (xxx) xxx xx xx</li>
+              <li><strong>E-posta:</strong> info@orion.com.tr</li>
+              <li><strong>Adres:</strong> Sakarya, Türkiye</li>
+            </ul>
+            <div class="map-placeholder">Harita entegrasyonu burada yer alacak.</div>
+          </div>
+          <div>
+            <form class="form" id="contactForm">
+              <label>
+                Ad Soyad
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                E-posta
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                Mesajınız
+                <textarea name="message" rows="6" required></textarea>
+              </label>
+              <button class="btn btn-primary" type="submit">Gönder</button>
+              <p class="form-status" id="contactStatus" role="status" aria-live="polite"></p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="routes.html">Hazır Rotalar</a>
+          <a href="ozel-rota.html">Özel Rota</a>
+          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
+          <a href="hakkimizda.html">Hakkımızda</a>
+          <a href="iletisim.html">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <!-- Seçim Modalları -->
+    <div class="modal" id="routesModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Rota Seçimi</h3>
+        <div class="modal-actions">
+          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="studentModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Okul Seçin</h3>
+        <label>Okul
+          <select id="schoolSelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Koleji">Orion Koleji</option>
+            <option value="Sakarya Lisesi">Sakarya Lisesi</option>
+            <option value="Ada Koleji">Ada Koleji</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoStudent">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+  </html>
+
+

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hakkımızda - Orion Turizm</title>
+    <link href="assets/css/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html">Ana Sayfa</a>
+          <a href="#" id="navRoutes">Rotalar</a>
+          <a href="#" id="navStudent">Öğrenci Servisi</a>
+          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container narrow">
+          <h1>Hakkımızda</h1>
+          <p>
+            Sakarya merkezli Orion Turizm, kurumsal ve bireysel müşterilerine
+            güvenli ve konforlu ulaşım çözümleri sunar. Filosunu düzenli olarak
+            yenileyen, sürüş güvenliğini önceliklendiren ve misafir memnuniyetini
+            odağına alan bir anlayış ile hizmet verir.
+          </p>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="stat-value">10+</span>
+              <span class="stat-label">Yıl Deneyim</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">30+</span>
+              <span class="stat-label">Araç</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">1000+</span>
+              <span class="stat-label">Mutlu Misafir</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="routes.html">Hazır Rotalar</a>
+          <a href="ozel-rota.html">Özel Rota</a>
+          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
+          <a href="hakkimizda.html">Hakkımızda</a>
+          <a href="iletisim.html">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <!-- Seçim Modalları -->
+    <div class="modal" id="routesModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Rota Seçimi</h3>
+        <div class="modal-actions">
+          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="studentModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Okul Seçin</h3>
+        <label>Okul
+          <select id="schoolSelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Koleji">Orion Koleji</option>
+            <option value="Sakarya Lisesi">Sakarya Lisesi</option>
+            <option value="Ada Koleji">Ada Koleji</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoStudent">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+  </html>
+
+

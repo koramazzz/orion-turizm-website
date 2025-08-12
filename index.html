@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sakarya Orion Turizm</title>
+    <meta name="description" content="Sakarya Orion Turizm - Hazır rotalar, özel rota talepleri, öğrenci servisi, yetkili kurumlar, yorumlar, hakkımızda ve iletişim." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="icon" href="assets/img/logo.png" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html" class="active">Ana Sayfa</a>
+          <a href="#" id="navRoutes">Rotalar</a>
+          <a href="#" id="navStudent">Öğrenci Servisi</a>
+          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- 1.1 Hazır Rotalar & Özel Rota + Dönen görseller -->
+      <section class="section section-hero" aria-label="Rotalar ve Özel Rota">
+        <div class="container hero-grid">
+          <div class="hero-carousel">
+            <div class="carousel" data-images='[
+              "https://images.unsplash.com/photo-1473625247510-8ceb1760943f?q=80&w=1400&auto=format&fit=crop",
+              "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1400&auto=format&fit=crop",
+              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1400&auto=format&fit=crop"
+            ]'>
+              <img alt="Rota görseli" />
+              <div class="carousel-dots" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="hero-ctas">
+            <a class="card cta-card" href="routes.html">
+              <div class="card-content">
+                <h2>Hazır Rotalar</h2>
+                <p>Popüler destinasyonlar ve avantajlı paketler.</p>
+                <span class="btn btn-light">Rotaları İncele</span>
+              </div>
+            </a>
+            <a class="card cta-card" href="ozel-rota.html">
+              <div class="card-content">
+                <h2>Özel Rota İstiyorum</h2>
+                <p>Size özel güzergâh ve program oluşturalım.</p>
+                <span class="btn btn-outline">Talep Oluştur</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.2 Öğrenci servisi -->
+      <section class="section section-student" id="ogrenci-servisi">
+        <div class="container two-col">
+          <div>
+            <h2>Öğrenci Servisi</h2>
+            <p>
+              Güvenli, konforlu ve zamanında öğrenci taşıma hizmeti. Deneyimli
+              sürücülerimiz ve düzenli bakımdan geçen araçlarımızla tüm okul
+              ve kurs ihtiyaçlarınız için yanınızdayız.
+            </p>
+            <ul class="check-list">
+              <li>GPS takip ve veli bilgilendirme</li>
+              <li>Periyodik bakım ve hijyen standartları</li>
+              <li>Deneyimli, sertifikalı sürücüler</li>
+            </ul>
+            <div class="actions">
+              <a class="btn btn-primary" href="ogrenci-servisi.html">Detaylar</a>
+              <a class="btn btn-ghost" href="iletisim.html">Teklif Al</a>
+            </div>
+          </div>
+          <div class="visual-card">
+            <div class="visual-bg" style="--bg:url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop')"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.3 Yorumlar -->
+      <section class="section section-testimonials" id="yorumlar">
+        <div class="container">
+          <h2>Ziyaretçi Yorumları</h2>
+          <div class="testimonials">
+            <figure class="testimonial">
+              <blockquote id="testimonial-quote">Harika bir deneyimdi, tüm süreç çok profesyoneldi.</blockquote>
+              <figcaption id="testimonial-author">— Misafir</figcaption>
+            </figure>
+            <div class="testimonial-dots" aria-hidden="true"></div>
+          </div>
+          <p class="muted small">Google yorum entegrasyonu daha sonra eklenecektir.</p>
+        </div>
+      </section>
+
+      <!-- 1.4 Yetkili kurumlar -->
+      <section class="section section-partners" id="yetkili-kurumlar">
+        <div class="container">
+          <h2>Yetkili Kurumlar</h2>
+          <div class="logo-grid">
+            <a class="logo-pill" href="https://www.tursab.org.tr/" target="_blank" rel="noopener">TÜRSAB</a>
+            <a class="logo-pill" href="https://www.uab.gov.tr/" target="_blank" rel="noopener">UAB</a>
+            <a class="logo-pill" href="https://www.istanbul.gov.tr/ulasim" target="_blank" rel="noopener">İl Ulaşım</a>
+            <a class="logo-pill" href="https://www.edevlet.gov.tr/" target="_blank" rel="noopener">e-Devlet</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.5 Hakkımızda kısa -->
+      <section class="section section-about">
+        <div class="container two-col">
+          <div>
+            <h2>Hakkımızda</h2>
+            <p>
+              Sakarya Orion Turizm olarak konforlu, güvenli ve planlı yolculuklar
+              sunuyoruz. Kurumsal organizasyonlardan kişisel seyahatlere,
+              deneyimli ekibimizle yanınızdayız.
+            </p>
+            <a class="btn btn-outline" href="hakkimizda.html">Daha Fazla</a>
+          </div>
+          <div class="visual-card">
+            <div class="visual-bg" style="--bg:url('https://images.unsplash.com/photo-1459478309853-2c33a60058e7?q=80&w=1200&auto=format&fit=crop')"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.6 İletişim kısa -->
+      <section class="section section-contact">
+        <div class="container contact-preview">
+          <div>
+            <h2>Bizimle İletişime Geçin</h2>
+            <p>Teklif, rezervasyon veya bilgi için formu doldurun.</p>
+            <a class="btn btn-primary" href="iletisim.html">İletişim Formu</a>
+          </div>
+          <ul class="contact-list">
+            <li><strong>Telefon:</strong> 0 (xxx) xxx xx xx</li>
+            <li><strong>E-posta:</strong> info@orion.com.tr</li>
+            <li><strong>Adres:</strong> Sakarya, Türkiye</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="routes.html">Hazır Rotalar</a>
+          <a href="ozel-rota.html">Özel Rota</a>
+          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
+          <a href="hakkimizda.html">Hakkımızda</a>
+          <a href="iletisim.html">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <!-- Seçim Modalları -->
+    <div class="modal" id="routesModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Rota Seçimi</h3>
+        <div class="modal-actions">
+          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="studentModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Okul Seçin</h3>
+        <label>Okul
+          <select id="schoolSelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Koleji">Orion Koleji</option>
+            <option value="Sakarya Lisesi">Sakarya Lisesi</option>
+            <option value="Ada Koleji">Ada Koleji</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoStudent">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+  </html>
+
+
