@@ -15,10 +15,11 @@
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
         <nav class="site-nav">
-          <a href="index.html">Ana Sayfa</a>
-          <a href="#" id="navRoutes" class="active">Rotalar</a>
-          <a href="#" id="navStudent">Öğrenci Servisi</a>
-          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar" class="active">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim" class="btn btn-primary">İletişim</a>
         </nav>
       </div>
     </header>
@@ -72,10 +73,10 @@
                 <input type="number" name="people" min="1" value="4" required />
               </label>
               <label>
-                Otel Lüksü (0-5)
+                Otel Lüksü (0-10)
                 <div class="range-wrap">
-                  <input type="range" min="0" max="5" step="1" value="3" name="hotel" />
-                  <output>3</output>
+                  <input type="range" min="0" max="10" step="1" value="5" name="hotel" />
+                  <output>5</output>
                 </div>
               </label>
               <label class="full">
@@ -97,11 +98,11 @@
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
-          <a href="routes.html">Hazır Rotalar</a>
-          <a href="ozel-rota.html">Özel Rota</a>
-          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
-          <a href="hakkimizda.html">Hakkımızda</a>
-          <a href="iletisim.html">İletişim</a>
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim">İletişim</a>
         </nav>
         <div class="copy">© <span id="year"></span> Orion Turizm</div>
       </div>
@@ -114,7 +115,7 @@
         <button class="modal-close" data-close aria-label="Kapat">×</button>
         <h3>Rota Seçimi</h3>
         <div class="modal-actions">
-          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-outline" href="turlar.html">Hazır Rotalar</a>
           <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
         </div>
       </div>
@@ -140,7 +141,6 @@
     </div>
 
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin.js"></script>
   </body>
-  </html>
-
-
+</html>

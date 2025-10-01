@@ -20,17 +20,18 @@
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
         <nav class="site-nav">
-          <a href="index.html" class="active">Ana Sayfa</a>
-          <a href="#" id="navRoutes">Rotalar</a>
-          <a href="#" id="navStudent">Öğrenci Servisi</a>
-          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+          <a href="index.html" class="active">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="#iletisim" class="btn btn-primary">İletişim</a>
         </nav>
       </div>
     </header>
 
     <main>
       <!-- 1.1 Hazır Rotalar & Özel Rota + Dönen görseller -->
-      <section class="section section-hero" aria-label="Rotalar ve Özel Rota">
+      <section class="section section-hero" aria-label="Rotalar ve Özel Rota" id="turlar">
         <div class="container hero-grid">
           <div class="hero-carousel">
             <div class="carousel" data-images='[
@@ -43,11 +44,11 @@
             </div>
           </div>
           <div class="hero-ctas">
-            <a class="card cta-card" href="routes.html">
+            <a class="card cta-card" href="turlar.html">
               <div class="card-content">
                 <h2>Hazır Rotalar</h2>
                 <p>Popüler destinasyonlar ve avantajlı paketler.</p>
-                <span class="btn btn-light">Rotaları İncele</span>
+                <span class="btn btn-outline">Rotaları İncele</span>
               </div>
             </a>
             <a class="card cta-card" href="ozel-rota.html">
@@ -61,28 +62,38 @@
         </div>
       </section>
 
-      <!-- 1.2 Öğrenci servisi -->
-      <section class="section section-student" id="ogrenci-servisi">
-        <div class="container two-col">
-          <div>
-            <h2>Öğrenci Servisi</h2>
-            <p>
-              Güvenli, konforlu ve zamanında öğrenci taşıma hizmeti. Deneyimli
-              sürücülerimiz ve düzenli bakımdan geçen araçlarımızla tüm okul
-              ve kurs ihtiyaçlarınız için yanınızdayız.
-            </p>
-            <ul class="check-list">
-              <li>GPS takip ve veli bilgilendirme</li>
-              <li>Periyodik bakım ve hijyen standartları</li>
-              <li>Deneyimli, sertifikalı sürücüler</li>
-            </ul>
-            <div class="actions">
-              <a class="btn btn-primary" href="ogrenci-servisi.html">Detaylar</a>
-              <a class="btn btn-ghost" href="iletisim.html">Teklif Al</a>
+      <!-- 1.2 Taşımacılık: Öğrenci ve Personel -->
+      <section class="section" id="tasimacilik">
+        <div class="container card-grid">
+          <article class="card transport-card">
+            <div class="visual-card">
+              <div class="visual-bg" style="--bg:url('https://images.pexels.com/photos/55821/van-vehicle-white-transportation-55821.jpeg?auto=compress&cs=tinysrgb&w=1200')"></div>
             </div>
-          </div>
-          <div class="visual-card">
-            <div class="visual-bg" style="--bg:url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=1200&auto=format&fit=crop')"></div>
+            <div class="card-content" style="text-align:center">
+              <h3>Öğrenci Servisi</h3>
+              <p class="muted">Güvenli, konforlu ve zamanında ulaşım.</p>
+              <a class="btn btn-outline" id="navStudent" href="#">Okul Seç</a>
+            </div>
+          </article>
+          <article class="card transport-card">
+            <div class="visual-card">
+              <div class="visual-bg" style="--bg:url('https://images.pexels.com/photos/1652346/pexels-photo-1652346.jpeg?auto=compress&cs=tinysrgb&w=1200')"></div>
+            </div>
+            <div class="card-content" style="text-align:center">
+              <h3>Personel Servisi</h3>
+              <p class="muted">Fabrika ve kurumlar için servis hizmeti.</p>
+              <a class="btn btn-outline" id="navFactory" href="#">Fabrika Seç</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 1.2b Taşımacılık Kurumları -->
+      <section class="section section-transport-orgs" id="tasimacilik-kurumlari">
+        <div class="container">
+          <h2>Hizmet Verdiğimiz Kurumlar</h2>
+          <div class="transport-orgs-grid">
+            <!-- Dinamik içerik buraya yüklenecek -->
           </div>
         </div>
       </section>
@@ -102,21 +113,8 @@
         </div>
       </section>
 
-      <!-- 1.4 Yetkili kurumlar -->
-      <section class="section section-partners" id="yetkili-kurumlar">
-        <div class="container">
-          <h2>Yetkili Kurumlar</h2>
-          <div class="logo-grid">
-            <a class="logo-pill" href="https://www.tursab.org.tr/" target="_blank" rel="noopener">TÜRSAB</a>
-            <a class="logo-pill" href="https://www.uab.gov.tr/" target="_blank" rel="noopener">UAB</a>
-            <a class="logo-pill" href="https://www.istanbul.gov.tr/ulasim" target="_blank" rel="noopener">İl Ulaşım</a>
-            <a class="logo-pill" href="https://www.edevlet.gov.tr/" target="_blank" rel="noopener">e-Devlet</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- 1.5 Hakkımızda kısa -->
-      <section class="section section-about">
+      <!-- 1.4 Hakkımızda kısa -->
+      <section class="section section-about" id="hakkimizda">
         <div class="container two-col">
           <div>
             <h2>Hakkımızda</h2>
@@ -125,7 +123,7 @@
               sunuyoruz. Kurumsal organizasyonlardan kişisel seyahatlere,
               deneyimli ekibimizle yanınızdayız.
             </p>
-            <a class="btn btn-outline" href="hakkimizda.html">Daha Fazla</a>
+
           </div>
           <div class="visual-card">
             <div class="visual-bg" style="--bg:url('https://images.unsplash.com/photo-1459478309853-2c33a60058e7?q=80&w=1200&auto=format&fit=crop')"></div>
@@ -133,19 +131,42 @@
         </div>
       </section>
 
+      <!-- 1.5 Yetkili kurumlar -->
+      <section class="section section-partners" id="yetkili-kurumlar">
+        <div class="container">
+          <h2>Yetkili Kurumlar</h2>
+          <div class="logo-grid">
+            <!-- Dinamik içerik buraya yüklenecek -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.5b Partnerlerimiz -->
+      <section class="section section-partners" id="partnerler">
+        <div class="container">
+          <h2>Partnerlerimiz</h2>
+          <div class="logo-grid">
+            <!-- Dinamik içerik buraya yüklenecek -->
+          </div>
+        </div>
+      </section>
+
       <!-- 1.6 İletişim kısa -->
-      <section class="section section-contact">
-        <div class="container contact-preview">
+      <section class="section section-contact" id="iletisim">
+        <div class="container two-col">
           <div>
             <h2>Bizimle İletişime Geçin</h2>
-            <p>Teklif, rezervasyon veya bilgi için formu doldurun.</p>
-            <a class="btn btn-primary" href="iletisim.html">İletişim Formu</a>
+            <p class="muted">Teklif, rezervasyon veya bilgi için bizimle iletişime geçin.</p>
+            <ul class="contact-list">
+              <li><strong>Telefon:</strong> 0 (xxx) xxx xx xx</li>
+              <li><strong>E-posta:</strong> info@orion.com.tr</li>
+              <li><strong>Adres:</strong> Sakarya, Türkiye</li>
+              <li><strong>Instagram:</strong> <a href="#" target="_blank" rel="noopener">@orion_turizm</a></li>
+            </ul>
           </div>
-          <ul class="contact-list">
-            <li><strong>Telefon:</strong> 0 (xxx) xxx xx xx</li>
-            <li><strong>E-posta:</strong> info@orion.com.tr</li>
-            <li><strong>Adres:</strong> Sakarya, Türkiye</li>
-          </ul>
+          <div class="contact-logo">
+            <img src="assets/img/logo.png" alt="Orion Turizm Logo" />
+          </div>
         </div>
       </section>
     </main>
@@ -157,11 +178,11 @@
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
-          <a href="routes.html">Hazır Rotalar</a>
-          <a href="ozel-rota.html">Özel Rota</a>
-          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
-          <a href="hakkimizda.html">Hakkımızda</a>
-          <a href="iletisim.html">İletişim</a>
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim">İletişim</a>
         </nav>
         <div class="copy">© <span id="year"></span> Orion Turizm</div>
       </div>
@@ -174,7 +195,7 @@
         <button class="modal-close" data-close aria-label="Kapat">×</button>
         <h3>Rota Seçimi</h3>
         <div class="modal-actions">
-          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-outline" href="turlar.html">Hazır Rotalar</a>
           <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
         </div>
       </div>
@@ -199,8 +220,26 @@
       </div>
     </div>
 
+    <div class="modal" id="factoryModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Fabrika Seçin</h3>
+        <label>Fabrika
+          <select id="factorySelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Fabrikası">Orion Fabrikası</option>
+            <option value="Ada Tekstil">Ada Tekstil</option>
+            <option value="Sapro Plastik">Sapro Plastik</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoFactory">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin.js"></script>
   </body>
-  </html>
-
-
+</html>

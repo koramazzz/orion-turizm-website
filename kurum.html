@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kurum Detayı - Sakarya Orion Turizm</title>
+    <meta name="description" content="Kurum detay sayfası - Sakarya Orion Turizm" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="icon" href="assets/img/logo.png" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-container">
+        <a class="brand" href="index.html">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm Logo" />
+          <span>Orion Turizm</span>
+        </a>
+        <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
+        <nav class="site-nav">
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim" class="btn btn-primary">İletişim</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- Kurum Detay Bölümü -->
+      <section class="section">
+        <div class="container narrow">
+          
+          <!-- Geri Dön Butonu -->
+          <div style="margin-bottom: 24px;">
+            <a href="index.html#tasimacilik" class="btn btn-outline">
+              ← Geri Dön
+            </a>
+          </div>
+
+          <!-- Kurum Kartı -->
+          <div class="org-detail-card">
+            
+            <!-- Kurum Başlığı -->
+            <div class="org-header">
+              <div class="org-logo-container">
+                <img id="orgLogo" src="" alt="Kurum Logosu" class="org-logo" />
+              </div>
+              <div class="org-info">
+                <h1 id="orgName">Kurum Adı</h1>
+              </div>
+            </div>
+
+            <!-- Kurum Açıklaması -->
+            <div class="org-description">
+              <p id="orgDescription">
+                Bu kurum hakkında açıklama metni burada görünecek. Admin panelinden düzenlenebilir.
+              </p>
+            </div>
+
+            <!-- Kurum Hizmetleri -->
+            <div class="org-services">
+              <h3>Hizmetlerimiz</h3>
+              <div id="orgButtons" class="org-buttons">
+                <!-- Dinamik butonlar buraya eklenecek -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="brand-col">
+          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <p class="muted">Konforlu ve güvenli yolculuklar.</p>
+        </div>
+        <nav class="footer-nav">
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim">İletişim</a>
+        </nav>
+        <div class="copy">© <span id="year"></span> Orion Turizm</div>
+      </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin.js"></script>
+    
+    <script>
+      // Sayfa yüklendiğinde kurum bilgilerini yükle
+      document.addEventListener('DOMContentLoaded', function() {
+        loadOrgDetails();
+        
+        // Yıl bilgisini güncelle
+        document.getElementById('year').textContent = new Date().getFullYear();
+      });
+
+      function loadOrgDetails() {
+        // URL'den kurum adını al
+        const urlParams = new URLSearchParams(window.location.search);
+        const orgName = urlParams.get('org');
+        
+        if (!orgName) {
+          // Kurum adı yoksa ana sayfaya yönlendir
+          window.location.href = 'index.html#tasimacilik';
+          return;
+        }
+
+        // localStorage'dan kurum bilgilerini al
+        const transportOrgs = JSON.parse(localStorage.getItem('transportOrgs') || '[]');
+        const org = transportOrgs.find(o => o.name === decodeURIComponent(orgName));
+        
+        if (!org) {
+          // Kurum bulunamazsa ana sayfaya yönlendir
+          window.location.href = 'index.html#tasimacilik';
+          return;
+        }
+
+        // Kurum bilgilerini sayfaya yükle
+        updateOrgInfo(org);
+      }
+
+      function updateOrgInfo(org) {
+        // Kurum adı
+        document.getElementById('orgName').textContent = org.name;
+        document.title = `${org.name} - Sakarya Orion Turizm`;
+        
+        
+        // Logo
+        const logoElement = document.getElementById('orgLogo');
+        if (org.logo) {
+          logoElement.src = org.logo;
+          logoElement.style.display = 'block';
+        } else {
+          logoElement.style.display = 'none';
+        }
+        
+        // Açıklama metni (admin panelinden gelecek)
+        const description = getOrgDescription(org.name, org.type);
+        document.getElementById('orgDescription').textContent = description;
+        
+        // Butonları oluştur
+        createOrgButtons(org);
+      }
+
+      function getOrgDescription(orgName, orgType) {
+        // Admin panelinden kaydedilmiş açıklamalar
+        const savedDescriptions = JSON.parse(localStorage.getItem('orgDescriptions') || '{}');
+        
+        if (savedDescriptions[orgName]) {
+          return savedDescriptions[orgName];
+        }
+        
+        // Varsayılan açıklamalar (admin panelinde açıklama yoksa)
+        if (orgType === 'school') {
+          return `${orgName} için güvenli, konforlu ve zamanında öğrenci taşımacılığı hizmeti sunuyoruz. Deneyimli şoförlerimiz ve modern araç filomuzla öğrencilerinizin güvenliğini ön planda tutuyoruz.`;
+        } else {
+          return `${orgName} için personel taşımacılığı hizmeti sunuyoruz. Fabrika çalışanlarınızın işe gidiş-geliş ihtiyaçlarını karşılamak için düzenli servis hizmeti sağlıyoruz.`;
+        }
+      }
+
+      function createOrgButtons(org) {
+        const buttonsContainer = document.getElementById('orgButtons');
+        buttonsContainer.innerHTML = '';
+        
+        // Buton bilgileri
+        const buttons = [
+          {
+            key: 'contractUrl',
+            label: '📄 Sözleşme İndir',
+            className: 'btn btn-outline',
+            condition: org.contractUrl
+          },
+          {
+            key: 'vitaWebUrl', 
+            label: '🌐 Vita Web Paneli',
+            className: 'btn btn-outline',
+            condition: org.vitaWebUrl
+          },
+          {
+            key: 'vitaAppUrl',
+            label: '📱 Vita Uygulaması',
+            className: 'btn btn-outline', 
+            condition: org.vitaAppUrl
+          },
+          {
+            key: 'paymentUrl',
+            label: '💳 Ödeme Yap',
+            className: 'btn btn-primary',
+            condition: org.paymentUrl
+          }
+        ];
+        
+        // Butonları oluştur
+        buttons.forEach(buttonInfo => {
+          if (buttonInfo.condition) {
+            const button = document.createElement('a');
+            button.href = org[buttonInfo.key];
+            button.target = '_blank';
+            button.rel = 'noopener noreferrer';
+            button.className = buttonInfo.className;
+            button.textContent = buttonInfo.label;
+            buttonsContainer.appendChild(button);
+          }
+        });
+        
+        // Hiç buton yoksa bilgi mesajı göster
+        if (buttonsContainer.children.length === 0) {
+          buttonsContainer.innerHTML = '<p class="muted">Bu kurum için henüz hizmet linkleri eklenmemiş.</p>';
+        }
+      }
+
+    </script>
+  </body>
+</html>

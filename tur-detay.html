@@ -15,10 +15,11 @@
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
         <nav class="site-nav">
-          <a href="index.html">Ana Sayfa</a>
-          <a href="#" id="navRoutes" class="active">Rotalar</a>
-          <a href="#" id="navStudent">Öğrenci Servisi</a>
-          <a href="iletisim.html" class="btn btn-primary">İletişim</a>
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar" class="active">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim" class="btn btn-primary">İletişim</a>
         </nav>
       </div>
     </header>
@@ -26,30 +27,62 @@
     <main>
       <section class="section">
         <div class="container">
-          <h1 id="tourTitle">Tur Detayı</h1>
-          <p class="muted" id="tourSubtitle">Örnek program ve görseller aşağıdadır.</p>
+          <!-- Tur Başlığı ve Açıklama -->
+          <div class="tour-header" style="text-align: center; margin-bottom: 40px;">
+            <h1 id="tourTitle">Tur Detayı</h1>
+            <p class="muted" id="tourSubtitle" style="font-size: 1.1rem; margin-bottom: 20px;">Örnek program ve görseller aşağıdadır.</p>
+          </div>
 
-          <div class="two-col" style="align-items:start;margin-top:12px">
-            <div class="visual-card" style="min-height:320px">
-              <div class="visual-bg" id="mapImage" style="--bg:url('https://images.unsplash.com/photo-1468109320504-ff0cd3d2d0fc?q=80&w=1200&auto=format&fit=crop')"></div>
+          <!-- Harita Görseli -->
+          <div class="map-section" style="margin-top:20px;">
+            <h3 style="margin-bottom: 15px; color: var(--brand);">📍 Tur Haritası</h3>
+            <div class="visual-card" style="min-height:400px;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.12);">
+              <div class="visual-bg" id="mapImage" style="--bg:url('https://images.unsplash.com/photo-1468109320504-ff0cd3d2d0fc?q=80&w=1200&auto=format&fit=crop');height:400px;background-size:cover;background-position:center;"></div>
             </div>
-            <div>
-              <div class="gallery" id="tourGallery">
-                <img alt="foto1" />
-                <img alt="foto2" />
-                <img alt="foto3" />
+          </div>
+
+          <!-- Tur Fotoğrafları -->
+          <div class="gallery-section" style="margin-top:20px;">
+            <h3 style="margin-bottom: 15px; color: var(--brand);">📸 Tur Fotoğrafları</h3>
+            <div class="gallery" id="tourGallery" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <img alt="foto1" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
+              <img alt="foto2" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
+              <img alt="foto3" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
+              <img alt="foto4" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
+            </div>
+          </div>
+
+          <!-- Detaylı Tur Açıklaması -->
+          <div class="tour-description" style="margin-top:40px;">
+            <h2 style="color: var(--brand); margin-bottom: 20px;">📖 Tur Hakkında</h2>
+            <div class="description-content" style="background: #f8f9fa; padding: 24px; border-radius: 16px; border-left: 4px solid var(--brand);">
+              <p id="tourDescription" style="font-size: 1.1rem; line-height: 1.7; margin: 0 0 20px; color: #333;">
+                Bu tur, eşsiz doğal güzellikleri ve tarihi zenginlikleriyle ünlü bölgeleri keşfetmenizi sağlayacak unutulmaz bir deneyim sunuyor. Profesyonel rehberimiz eşliğinde, bölgenin en önemli noktalarını ziyaret edecek ve yerel kültürü yakından tanıma fırsatı bulacaksınız.
+              </p>
+              <div class="highlights" style="margin-top: 20px;">
+                <h4 style="color: var(--brand); margin-bottom: 12px;">✨ Turun Öne Çıkan Özellikleri:</h4>
+                <ul id="tourHighlights" style="list-style: none; padding: 0; margin: 0;">
+                  <li style="padding: 8px 0; border-bottom: 1px solid #eee;">🏛️ Tarihi ve kültürel mekanları ziyaret</li>
+                  <li style="padding: 8px 0; border-bottom: 1px solid #eee;">🍽️ Yerel lezzetleri tatma fırsatı</li>
+                  <li style="padding: 8px 0; border-bottom: 1px solid #eee;">📸 Profesyonel fotoğraf çekimi</li>
+                  <li style="padding: 8px 0;">🎁 Anı eşyaları satın alma imkanı</li>
+                </ul>
               </div>
             </div>
           </div>
 
-          <div class="itinerary" id="itinerary" style="margin-top:20px">
-            <h2>Tur Programı</h2>
-            <ol>
-              <li>Gün 1: Varış ve şehir turu</li>
-              <li>Gün 2: Bölge gezileri ve serbest zaman</li>
-              <li>Gün 3: Dönüş</li>
-            </ol>
+          <!-- Tur Programı -->
+          <div class="itinerary" id="itinerary" style="margin-top:40px;">
+            <h2 style="color: var(--brand); margin-bottom: 20px;">🗓️ Detaylı Tur Programı</h2>
+            <div class="itinerary-content" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,.08);">
+              <ol id="itineraryList" style="padding-left: 20px; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün 1: Varış ve şehir turu</li>
+                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün 2: Bölge gezileri ve serbest zaman</li>
+                <li style="padding: 12px 0; font-size: 1.1rem; line-height: 1.6;">Gün 3: Dönüş</li>
+              </ol>
+            </div>
           </div>
+
         </div>
       </section>
     </main>
@@ -61,11 +94,11 @@
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
-          <a href="routes.html">Hazır Rotalar</a>
-          <a href="ozel-rota.html">Özel Rota</a>
-          <a href="ogrenci-servisi.html">Öğrenci Servisi</a>
-          <a href="hakkimizda.html">Hakkımızda</a>
-          <a href="iletisim.html">İletişim</a>
+          <a href="index.html">Anasayfa</a>
+          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#tasimacilik">Taşımacılık</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
+          <a href="index.html#iletisim">İletişim</a>
         </nav>
         <div class="copy">© <span id="year"></span> Orion Turizm</div>
       </div>
@@ -78,7 +111,7 @@
         <button class="modal-close" data-close aria-label="Kapat">×</button>
         <h3>Rota Seçimi</h3>
         <div class="modal-actions">
-          <a class="btn btn-outline" href="routes.html">Hazır Rotalar</a>
+          <a class="btn btn-outline" href="turlar.html">Hazır Rotalar</a>
           <a class="btn btn-primary" href="ozel-rota.html">Özel Rota</a>
         </div>
       </div>
@@ -103,8 +136,16 @@
       </div>
     </div>
 
+    <!-- Fotoğraf Modalı -->
+    <div class="modal" id="imageModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card" style="max-width: 90vw; max-height: 90vh; padding: 0; background: transparent; box-shadow: none;">
+        <button class="modal-close" data-close aria-label="Kapat" style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px;">×</button>
+        <img id="modalImage" src="" alt="Tur Fotoğrafı" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;" />
+      </div>
+    </div>
+
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin.js"></script>
   </body>
-  </html>
-
-
+</html>

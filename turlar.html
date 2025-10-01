@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hakkımızda - Orion Turizm</title>
+    <title>Hazır Rotalar - Orion Turizm</title>
     <link href="assets/css/styles.css" rel="stylesheet" />
   </head>
   <body>
@@ -16,9 +16,9 @@
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
         <nav class="site-nav">
           <a href="index.html">Anasayfa</a>
-          <a href="index.html#turlar">Turlar</a>
+          <a href="index.html#turlar" class="active">Turlar</a>
           <a href="index.html#tasimacilik">Taşımacılık</a>
-          <a href="index.html#hakkimizda" class="active">Hakkımızda</a>
+          <a href="index.html#hakkimizda">Hakkımızda</a>
           <a href="index.html#iletisim" class="btn btn-primary">İletişim</a>
         </nav>
       </div>
@@ -26,28 +26,28 @@
 
     <main>
       <section class="section">
-        <div class="container narrow">
-          <h1>Hakkımızda</h1>
-          <p>
-            Sakarya merkezli Orion Turizm, kurumsal ve bireysel müşterilerine
-            güvenli ve konforlu ulaşım çözümleri sunar. Filosunu düzenli olarak
-            yenileyen, sürüş güvenliğini önceliklendiren ve misafir memnuniyetini
-            odağına alan bir anlayış ile hizmet verir.
-          </p>
-          <div class="stat-grid">
-            <div class="stat">
-              <span class="stat-value">10+</span>
-              <span class="stat-label">Yıl Deneyim</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">30+</span>
-              <span class="stat-label">Araç</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">1000+</span>
-              <span class="stat-label">Mutlu Misafir</span>
-            </div>
+        <div class="container">
+          <h1>Turlarımız</h1>
+          <p class="muted">Popüler hazır turlar ve örnek programlar.</p>
+
+
+          <div class="card-grid" id="toursGrid">
+            <!-- Dinamik turlar buraya yüklenecek -->
           </div>
+
+          <!-- 24 saat içinde bilgilendirme -->
+          <div class="info-note" style="margin-top:28px">
+            <p><strong>Not:</strong> Formu gönderdikten sonra <strong>24 saat içinde</strong> size dönüş yapacağız.</p>
+          </div>
+
+          <!-- Dinamik form -->
+          <form class="form" id="toursForm" style="margin-top:16px">
+            <div class="form-grid">
+              <!-- Dinamik form alanları buraya yüklenecek -->
+            </div>
+            <button class="btn btn-primary" type="submit">Gönder</button>
+            <p class="form-status" id="toursFormStatus" role="status" aria-live="polite"></p>
+          </form>
         </div>
       </section>
     </main>
@@ -101,9 +101,26 @@
       </div>
     </div>
 
-        <script src="assets/js/main.js"></script>
+    <div class="modal" id="factoryModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-card">
+        <button class="modal-close" data-close aria-label="Kapat">×</button>
+        <h3>Fabrika Seçin</h3>
+        <label>Fabrika
+          <select id="factorySelect">
+            <option value="">Seçiniz</option>
+            <option value="Orion Fabrikası">Orion Fabrikası</option>
+            <option value="Ada Tekstil">Ada Tekstil</option>
+            <option value="Sapro Plastik">Sapro Plastik</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="gotoFactory">Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
     <script src="assets/js/admin.js"></script>
   </body>
 </html>
-
-
