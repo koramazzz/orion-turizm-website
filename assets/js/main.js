@@ -11,22 +11,37 @@
 
   // Backend verilerini yükle ve sayfayı güncelle
   async function loadBackendData() {
+    console.log('🔍 Backend veri yükleme başlatılıyor...');
+    
     if (!window.preloader || !window.preloader.isInitialized) {
+      console.warn('⚠️ Preloader henüz hazır değil');
       return;
     }
 
     try {
       // Site içeriklerini al
+      console.log('📥 Site içerikleri yükleniyor...');
       const siteContent = await window.preloader.getCachedData('siteContent');
+      console.log('📊 Site içerikleri:', siteContent);
+      
       if (siteContent) {
+        console.log('✅ Site içerikleri bulundu, sayfa güncelleniyor...');
         updatePageWithSiteContent(siteContent);
+      } else {
+        console.warn('⚠️ Site içerikleri bulunamadı');
       }
 
       // Taşımacılık kurumlarını al
+      console.log('🚌 Taşımacılık kurumları yükleniyor...');
       const transportOrgs = await window.preloader.getCachedData('transportOrgs');
+      console.log('🏢 Taşımacılık kurumları:', transportOrgs);
+      
       if (transportOrgs && transportOrgs.length > 0) {
+        console.log('✅ Taşımacılık kurumları bulundu, güncelleniyor...');
         updateTransportOrgs(transportOrgs);
         populateOrgSelects(transportOrgs);
+      } else {
+        console.warn('⚠️ Taşımacılık kurumları bulunamadı');
       }
 
       // Hizmet verdiğimiz kurumları güncelle (site içeriklerinden)
@@ -79,21 +94,32 @@
 
   // Site içeriklerini sayfaya uygula
   function updatePageWithSiteContent(content) {
+    console.log('🔄 Site içerikleri sayfaya uygulanıyor...');
+    
     // Carousel görsellerini güncelle
     if (content.carouselImages) {
+      console.log('🖼️ Carousel görselleri bulundu:', content.carouselImages);
       try {
         const images = JSON.parse(content.carouselImages);
+        console.log('📸 Parse edilen görseller:', images);
+        
         const carousel = document.querySelector('.carousel');
         if (carousel && images && images.length > 0) {
+          console.log('✅ Carousel bulundu, görseller güncelleniyor...');
           carousel.setAttribute('data-images', JSON.stringify(images));
           // Carousel'i yeniden başlat
           if (window.initializeCarousel) {
+            console.log('🔄 Carousel yeniden başlatılıyor...');
             window.initializeCarousel();
           }
+        } else {
+          console.warn('⚠️ Carousel bulunamadı veya görseller boş');
         }
       } catch (e) {
-        console.warn('Carousel görselleri parse edilemedi:', e);
+        console.error('❌ Carousel görselleri parse edilemedi:', e);
       }
+    } else {
+      console.warn('⚠️ Carousel görselleri bulunamadı');
     }
 
     // Logo güncellemeleri
@@ -217,12 +243,19 @@
 
   // Taşımacılık kurumlarını güncelle
   function updateTransportOrgs(orgs) {
+    console.log('🔄 Taşımacılık kurumları güncelleniyor:', orgs);
+    
     const container = document.querySelector('.transport-orgs-grid');
-    if (!container) return;
+    if (!container) {
+      console.warn('⚠️ .transport-orgs-grid container bulunamadı');
+      return;
+    }
 
     container.innerHTML = '';
+    console.log('✅ Container temizlendi, kurumlar ekleniyor...');
 
     orgs.forEach(org => {
+      console.log('🏢 Kurum ekleniyor:', org.name);
       const orgElement = document.createElement('div');
       orgElement.className = 'transport-org-card';
       
@@ -329,12 +362,18 @@
 
   // Preloader hazır olduğunda verileri yükle
   function waitForPreloader() {
+    console.log('⏳ Preloader durumu kontrol ediliyor...');
+    console.log('🔍 window.preloader:', window.preloader);
+    console.log('🔍 isInitialized:', window.preloader ? window.preloader.isInitialized : 'undefined');
+    
     if (window.preloader && window.preloader.isInitialized) {
+      console.log('✅ Preloader hazır, backend verileri yükleniyor...');
       loadBackendData();
       // İçerik sonrası header logosu yoksa yedeği dene
       ensureHeaderLogoFallback();
       ensureContentLogoFallback();
     } else {
+      console.log('⏳ Preloader henüz hazır değil, 100ms bekleniyor...');
       setTimeout(waitForPreloader, 100);
     }
   }
