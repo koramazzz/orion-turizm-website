@@ -974,15 +974,18 @@
       if (data.show_once) {
         const hasViewed = await checkPopupViewHistory();
         if (hasViewed) {
+          console.log('Popup daha önce görüntülenmiş, gösterilmiyor');
           return;
         }
       }
 
       // Popup'ı göster
+      console.log('📢 Popup gösteriliyor...');
       showPopup(data);
 
       // Popup gösterildi olarak işaretle
       if (data.show_once) {
+        console.log('Popup görüntüleme kaydı oluşturuluyor...');
         await recordPopupView();
       }
 
@@ -1046,6 +1049,9 @@
       popup.style.animation = 'popupFadeOut 0.3s ease-out';
       setTimeout(() => {
         popup.remove();
+        // Popup kapatıldığında da kayıt oluştur
+        console.log('Popup kapatıldı, kayıt oluşturuluyor...');
+        recordPopupView();
       }, 300);
     }
   }
