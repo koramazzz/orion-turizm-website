@@ -37,8 +37,7 @@
       console.log('🏢 Taşımacılık kurumları:', transportOrgs);
       
       if (transportOrgs && transportOrgs.length > 0) {
-        console.log('✅ Taşımacılık kurumları bulundu, güncelleniyor...');
-        updateTransportOrgs(transportOrgs);
+        console.log('✅ Taşımacılık kurumları bulundu, seçim modalları güncelleniyor...');
         populateOrgSelects(transportOrgs);
       } else {
         console.warn('⚠️ Taşımacılık kurumları bulunamadı');
@@ -239,52 +238,6 @@
     }catch(e){ /* ignore */ }
   }
 
-  // Taşımacılık kurumlarını güncelle
-  function updateTransportOrgs(orgs) {
-    console.log('🔄 Taşımacılık kurumları güncelleniyor:', orgs);
-    
-    const container = document.querySelector('.transport-orgs-grid');
-    if (!container) {
-      console.warn('⚠️ .transport-orgs-grid container bulunamadı');
-      return;
-    }
-
-    container.innerHTML = '';
-    console.log('✅ Container temizlendi, kurumlar ekleniyor...');
-
-    orgs.forEach(org => {
-      console.log('🏢 Kurum ekleniyor:', org.name);
-      const orgElement = document.createElement('div');
-      orgElement.className = 'transport-org-card';
-      
-      let logoHtml = '';
-      if (org.logo_url) {
-        logoHtml = `<img src="${org.logo_url}" alt="${org.name}" class="org-logo">`;
-      }
-
-      // URL'leri düzelt - protokol yoksa https:// ekle
-      const fixUrl = (url) => {
-        if (url && !url.match(/^https?:\/\//)) {
-          return 'https://' + url;
-        }
-        return url;
-      };
-
-      orgElement.innerHTML = `
-        ${logoHtml}
-        <h3>${org.name}</h3>
-        ${org.description ? `<p class="muted">${org.description}</p>` : ''}
-        <div class="org-links">
-          ${org.contract_url ? `<a href="${fixUrl(org.contract_url)}" target="_blank" class="btn btn-outline btn-sm">Sözleşme</a>` : ''}
-          ${org.vita_web_url ? `<a href="${fixUrl(org.vita_web_url)}" target="_blank" class="btn btn-outline btn-sm">Web</a>` : ''}
-          ${org.vita_app_url ? `<a href="${fixUrl(org.vita_app_url)}" target="_blank" class="btn btn-outline btn-sm">App</a>` : ''}
-          ${org.payment_url ? `<a href="${fixUrl(org.payment_url)}" target="_blank" class="btn btn-primary btn-sm">Ödeme</a>` : ''}
-        </div>
-      `;
-
-      container.appendChild(orgElement);
-    });
-  }
 
   // Ekran boyutuna göre kaç öğenin sığacağını hesapla
   function calculateVisibleItems() {

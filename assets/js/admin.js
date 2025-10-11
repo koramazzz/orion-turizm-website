@@ -1911,61 +1911,15 @@ class ContentUpdater {
       }
     }
 
-    // Taşımacılık kurumlarını backend'den al ve güncelle
+    // Taşımacılık kurumlarını backend'den al ve seçim modallarını güncelle
     try {
       const transportOrgs = await window.backendManager.getTransportOrgs() || [];
       if (transportOrgs && transportOrgs.length > 0) {
-        const transportOrgsGrid = document.querySelector('.transport-orgs-grid');
-        
-        if (transportOrgsGrid && transportOrgs.length > 0) {
-          transportOrgsGrid.innerHTML = '';
-          transportOrgs.forEach(orgRaw => {
-            // Supabase'den snake_case ile gelen alanları camelCase'e eşle
-            const org = {
-              name: orgRaw.name,
-              type: orgRaw.type,
-              logo: orgRaw.logo_url || '',
-              contractUrl: orgRaw.contract_url || '',
-              vitaWebUrl: orgRaw.vita_web_url || '',
-              vitaAppUrl: orgRaw.vita_app_url || '',
-              paymentUrl: orgRaw.payment_url || '',
-              description: orgRaw.description || ''
-            };
-            const orgCard = document.createElement('div');
-            orgCard.className = 'transport-org-card';
-            
-            const logoSrc = org.logo || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiByeD0iMTIiIGZpbGw9IiNmNmY2ZjkiLz4KPHN2ZyB4PSIxNSIgeT0iMTUiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2YjZiN2EiIHN0cm9rZS13aWR0aD0iMiI+CjxwYXRoIGQ9Im0zIDkgOS03IDkgN3YxMWEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMnoiLz4KPHN0cm9rZSBkPSJtOSAyMiAzLTgiLz4KPHN0cm9rZSBkPSJtMTIgMiAzIDgiLz4KPC9zdmc+Cjwvc3ZnPgo=';
-            
-            orgCard.innerHTML = `
-              <div class="transport-org-header">
-                <img src="${logoSrc}" alt="${org.name} Logo" class="transport-org-logo" />
-                <div class="transport-org-info">
-                  <h3>${org.name}</h3>
-                  <span class="transport-org-type ${org.type}">${org.type === 'school' ? 'Okul' : 'Fabrika'}</span>
-                </div>
-              </div>
-              <div class="transport-org-actions">
-                ${org.contractUrl ? `<a href="${org.contractUrl}" target="_blank" class="btn btn-outline">📄 Sözleşme</a>` : ''}
-                ${org.vitaWebUrl ? `<a href="${org.vitaWebUrl}" target="_blank" class="btn btn-outline">🌐 Vita Web</a>` : ''}
-                ${org.vitaAppUrl ? `<a href="${org.vitaAppUrl}" target="_blank" class="btn btn-outline">📱 Vita App</a>` : ''}
-                ${org.paymentUrl ? `<a href="${org.paymentUrl}" target="_blank" class="btn btn-primary">💳 Ödeme</a>` : ''}
-              </div>
-            `;
-            
-            transportOrgsGrid.appendChild(orgCard);
-          });
-          // Seçim modallarını güncelle
-          this.updateTransportModals(transportOrgs.map(o => ({
-            name: o.name,
-            type: o.type
-          })));
-        } else {
-          // Kurumlar yoksa bölümü gizle
-          const transportOrgsSection = document.querySelector('.section-transport-orgs');
-          if (transportOrgsSection) {
-            transportOrgsSection.style.display = 'none';
-          }
-        }
+        // Seçim modallarını güncelle
+        this.updateTransportModals(transportOrgs.map(o => ({
+          name: o.name,
+          type: o.type
+        })));
       }
     } catch (error) {
       console.warn('Taşımacılık kurumları yüklenemedi:', error);
@@ -2167,11 +2121,6 @@ class ContentUpdater {
       toursGrid.innerHTML = '';
     }
     
-    // Taşımacılık kurumları bölümünü temizle
-    const transportOrgsGrid = document.querySelector('.transport-orgs-grid');
-    if (transportOrgsGrid) {
-      transportOrgsGrid.innerHTML = '';
-    }
     
     // Routes form bölümünü temizle
     const routesFormGrid = document.querySelector('#toursForm .form-grid');

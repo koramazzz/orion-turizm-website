@@ -75,48 +75,6 @@
   opacity: 1;
 }
 
-/* Transport Organization Cards */
-.transport-orgs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  margin-top: 32px;
-}
-
-.transport-org-card {
-  background: var(--surface);
-  border: 1px solid #eee;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.transport-org-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-}
-
-.transport-org-card .org-logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  margin: 0 auto 16px;
-  border-radius: 8px;
-}
-
-.transport-org-card h3 {
-  margin: 0 0 12px;
-  color: var(--ink);
-  font-size: 1.25rem;
-}
-
-.transport-org-card .muted {
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
 
 .org-links {
   display: flex;
@@ -1117,99 +1075,6 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
 [data-reveal].is-visible{opacity:1;transform:none}
 [data-reveal="fade"]{transform:none}
 
-/* Taşımacılık Kurumları */
-.section-transport-orgs {
-  background: linear-gradient(135deg, var(--surface-2), var(--surface));
-}
-
-.transport-orgs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin-top: 32px;
-}
-
-.transport-org-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  transition: all .3s ease;
-  border: 1px solid #f0f0f0;
-}
-
-.transport-org-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 32px rgba(122,28,134,.15);
-  border-color: var(--brand-50);
-}
-
-.transport-org-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.transport-org-logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  object-fit: contain;
-  border: 2px solid var(--surface-2);
-  background: white;
-  padding: 8px;
-}
-
-.transport-org-info h3 {
-  margin: 0 0 4px 0;
-  color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.transport-org-type {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.transport-org-type.school {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.transport-org-type.factory {
-  background: #f3e5f5;
-  color: var(--brand);
-}
-
-.transport-org-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.transport-org-actions .btn {
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  border-radius: 8px;
-}
-
-.transport-org-actions .btn-outline {
-  border: 1px solid #ddd;
-  color: var(--muted);
-}
-
-.transport-org-actions .btn-outline:hover {
-  border-color: var(--brand);
-  color: var(--brand);
-  background: var(--brand-50);
-}
 
 /* Responsive tasarım */
 @media (max-width: 768px) {
@@ -1222,19 +1087,6 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
     height: 100px;
   }
   
-  .transport-orgs-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .transport-org-header {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .transport-org-actions {
-    justify-content: center;
-  }
 }
 
 /* Kurum Detay Sayfası */
