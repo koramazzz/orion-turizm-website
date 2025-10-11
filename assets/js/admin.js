@@ -10,6 +10,31 @@
     window.__LOCAL_STORAGE_DISABLED__ = true;
   } catch(e){ console.warn('LocalStorage disable failed', e); }
 })();
+// Ekran boyutuna göre kaç öğenin sığacağını hesapla (global fonksiyon)
+function calculateVisibleItems() {
+  const container = document.querySelector('.logo-grid');
+  if (!container) return 4; // Varsayılan değer
+  
+  const containerWidth = container.offsetWidth;
+  const gap = 16; // CSS'teki gap değeri
+  
+  // Responsive breakpoint'lere göre min-width değerleri
+  let minItemWidth;
+  if (containerWidth >= 1200) {
+    minItemWidth = 200;
+  } else if (containerWidth >= 769) {
+    minItemWidth = 180;
+  } else if (containerWidth >= 481) {
+    minItemWidth = 150;
+  } else {
+    minItemWidth = 120;
+  }
+  
+  // Kaç öğenin sığacağını hesapla
+  const visibleItems = Math.floor((containerWidth + gap) / (minItemWidth + gap));
+  return Math.max(1, visibleItems); // En az 1 öğe
+}
+
 class AdminPanel {
   constructor() {
     // Şifre backend'den yüklenecek; varsayılan başlangıç değeri
@@ -23,6 +48,7 @@ class AdminPanel {
     // Session kontrolü yap
     this.checkAuth();
   }
+
 
   bindEvents() {
     // Giriş formu (sadece admin.html'de var)
@@ -1744,18 +1770,45 @@ class ContentUpdater {
         // Ana sayfadaki yetkili kurumlar bölümünü güncelle
         const logoGrid = document.querySelector('#yetkili-kurumlar .logo-grid');
       if (logoGrid && institutionData.length > 0) {
-        // Responsive kaydırma sistemi - her zaman kullan
-        logoGrid.innerHTML = '';
-        institutionData.forEach(inst => {
-          const link = document.createElement('a');
-          link.className = 'logo-pill';
-          link.href = inst.url;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          link.textContent = inst.name;
-          link.title = inst.name;
-          logoGrid.appendChild(link);
-        });
+        // Ekran boyutuna göre kaç öğenin sığacağını hesapla
+        const visibleItems = calculateVisibleItems();
+        
+        // Dinamik kaydırma için container oluştur
+        if (institutionData.length > visibleItems) {
+          logoGrid.innerHTML = `
+            <div class="partners-container">
+              <div class="partners-scroll" id="institutionsScroll">
+                ${institutionData.map(inst => `
+                  <div class="partner-item">
+                    <a class="logo-pill" href="${inst.url}" target="_blank" rel="noopener" title="${inst.name}">
+                      ${inst.name}
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="scroll-buttons">
+                <button class="scroll-btn" id="institutionsScrollLeft">‹</button>
+                <button class="scroll-btn" id="institutionsScrollRight">›</button>
+              </div>
+            </div>
+          `;
+          
+          // Kaydırma butonları için event listener'lar ekle
+          this.addScrollButtons('#institutionsScroll', '#institutionsScrollLeft', '#institutionsScrollRight');
+        } else {
+          // Az sayıda kurum varsa normal flex düzen kullan
+          logoGrid.innerHTML = '';
+          institutionData.forEach(inst => {
+            const link = document.createElement('a');
+            link.className = 'logo-pill';
+            link.href = inst.url;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = inst.name;
+            link.title = inst.name;
+            logoGrid.appendChild(link);
+          });
+        }
       }
     }
 
@@ -1772,18 +1825,45 @@ class ContentUpdater {
       // Ana sayfadaki partnerler bölümünü güncelle
       const partnerGrid = document.querySelector('#partnerler .logo-grid');
       if (partnerGrid && partnerData.length > 0) {
-        // Responsive kaydırma sistemi - her zaman kullan
+        // Ekran boyutuna göre kaç öğenin sığacağını hesapla
+        const visibleItems = calculateVisibleItems();
+        
+        // Dinamik kaydırma için container oluştur
+        if (partnerData.length > visibleItems) {
+          partnerGrid.innerHTML = `
+            <div class="partners-container">
+              <div class="partners-scroll" id="partnersScroll">
+                ${partnerData.map(partner => `
+                  <div class="partner-item">
+                    <a class="logo-pill" href="${partner.url}" target="_blank" rel="noopener" title="${partner.name}">
+                      ${partner.name}
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="scroll-buttons">
+                <button class="scroll-btn" id="partnersScrollLeft">‹</button>
+                <button class="scroll-btn" id="partnersScrollRight">›</button>
+              </div>
+            </div>
+          `;
+          
+          // Kaydırma butonları için event listener'lar ekle
+          this.addScrollButtons('#partnersScroll', '#partnersScrollLeft', '#partnersScrollRight');
+        } else {
+          // Az sayıda partner varsa normal flex düzen kullan
         partnerGrid.innerHTML = '';
-        partnerData.forEach(partner => {
-          const link = document.createElement('a');
-          link.className = 'logo-pill';
-          link.href = partner.url;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          link.textContent = partner.name;
-          link.title = partner.name;
-          partnerGrid.appendChild(link);
-        });
+          partnerData.forEach(partner => {
+            const link = document.createElement('a');
+            link.className = 'logo-pill';
+            link.href = partner.url;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = partner.name;
+            link.title = partner.name;
+            partnerGrid.appendChild(link);
+          });
+        }
       }
     }
 

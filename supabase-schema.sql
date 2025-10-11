@@ -262,10 +262,9 @@ CREATE TABLE IF NOT EXISTS popup_settings (
 -- Popup gösterim geçmişi tablosu (IP bazlı takip - 3 saat aralıklarla)
 CREATE TABLE IF NOT EXISTS popup_views (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ip_address TEXT NOT NULL,
+  ip_address TEXT NOT NULL UNIQUE,
   user_agent TEXT,
-  viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(ip_address)
+  viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Popup settings için RLS
@@ -287,8 +286,14 @@ CREATE POLICY "Allow public insert popup views" ON popup_views
 CREATE POLICY "Allow public read popup views" ON popup_views
   FOR SELECT USING (true);
 
+CREATE POLICY "Allow public update popup views" ON popup_views
+  FOR UPDATE USING (true);
+
 -- Popup settings trigger
 CREATE TRIGGER update_popup_settings_updated_at BEFORE UPDATE ON popup_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Popup views trigger (opsiyonel - viewed_at zaten manuel güncelleniyor)
+-- CREATE TRIGGER update_popup_views_updated_at BEFORE UPDATE ON popup_views FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Varsayılan popup ayarları
 INSERT INTO popup_settings (is_active, title, content, link_url, link_text, show_once) VALUES

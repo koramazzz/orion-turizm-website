@@ -286,6 +286,31 @@
     });
   }
 
+  // Ekran boyutuna göre kaç öğenin sığacağını hesapla
+  function calculateVisibleItems() {
+    const container = document.querySelector('.logo-grid');
+    if (!container) return 4; // Varsayılan değer
+    
+    const containerWidth = container.offsetWidth;
+    const gap = 16; // CSS'teki gap değeri
+    
+    // Responsive breakpoint'lere göre min-width değerleri
+    let minItemWidth;
+    if (containerWidth >= 1200) {
+      minItemWidth = 200;
+    } else if (containerWidth >= 769) {
+      minItemWidth = 180;
+    } else if (containerWidth >= 481) {
+      minItemWidth = 150;
+    } else {
+      minItemWidth = 120;
+    }
+    
+    // Kaç öğenin sığacağını hesapla
+    const visibleItems = Math.floor((containerWidth + gap) / (minItemWidth + gap));
+    return Math.max(1, visibleItems); // En az 1 öğe
+  }
+
   // Hizmet verdiğimiz kurumları güncelle
   function updateServiceOrganizations(serviceOrgsData) {
     if (!serviceOrgsData) return;
@@ -304,12 +329,39 @@
       return;
     }
 
-    // Responsive kaydırma sistemi - her zaman kullan
-    container.innerHTML = serviceOrgData.map(org => `
-      <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
-        ${org.name}
-      </a>
-    `).join('');
+    // Ekran boyutuna göre kaç öğenin sığacağını hesapla
+    const visibleItems = calculateVisibleItems();
+    
+    // Dinamik kaydırma için container oluştur (görünür öğe sayısından fazla varsa)
+    if (serviceOrgData.length > visibleItems) {
+      container.innerHTML = `
+        <div class="partners-container">
+          <div class="partners-scroll" id="serviceOrgsScroll">
+            ${serviceOrgData.map(org => `
+              <div class="partner-item">
+                <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
+                  ${org.name}
+                </a>
+              </div>
+            `).join('')}
+          </div>
+          <div class="scroll-buttons">
+            <button class="scroll-btn" id="serviceOrgsScrollLeft">‹</button>
+            <button class="scroll-btn" id="serviceOrgsScrollRight">›</button>
+          </div>
+        </div>
+      `;
+      
+      // Kaydırma butonları için event listener'lar ekle
+      addScrollButtons('#serviceOrgsScroll', '#serviceOrgsScrollLeft', '#serviceOrgsScrollRight');
+    } else {
+      // Az sayıda kurum varsa normal flex düzen kullan
+      container.innerHTML = serviceOrgData.map(org => `
+        <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
+          ${org.name}
+        </a>
+      `).join('');
+    }
   }
 
   // Kaydırma butonları için yardımcı fonksiyon
@@ -359,6 +411,18 @@
     console.log('🔍 Preloader durumu:', window.preloader);
     
     waitForPreloader();
+    
+    // Ekran boyutu değiştiğinde responsive düzeni yeniden hesapla
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function() {
+        // Sayfa içeriğini yeniden yükle (responsive düzen için)
+        if (window.preloader && window.preloader.isInitialized) {
+          loadBackendData();
+        }
+      }, 250);
+    });
   });
 
   // Preloader'dan veri güncellemesi geldiğinde sayfayı yenile
@@ -812,17 +876,15 @@
     }
   }
 
-  // Popup görüntüleme geçmişini kontrol et (3 saat aralıklarla)
+  // Popup görüntüleme geçmişini kontrol et
   async function checkPopupViewHistory() {
     try {
       if (!window.supabase || typeof window.supabase.from !== 'function') {
-        console.warn('⚠️ Supabase bağlantısı yok, popup geçmişi kontrol edilemiyor');
         return false;
       }
       
       const userIP = await getUserIP();
       
-      // IP adresini temizle ve doğrula
       if (!userIP || userIP === 'unknown') {
         return false;
       }
@@ -831,86 +893,60 @@
         .from('popup_views')
         .select('viewed_at')
         .eq('ip_address', userIP)
-        .limit(1);
+        .single();
 
       if (error) {
-        console.error('Popup görüntüleme geçmişi kontrol edilirken hata:', error);
         return false;
       }
 
-      // Eğer kayıt yoksa popup gösterilebilir
-      if (!data || data.length === 0) {
+      if (!data) {
         return false;
       }
 
-      // Son görüntüleme tarihini kontrol et
-      const lastViewed = new Date(data[0].viewed_at);
+      const lastViewed = new Date(data.viewed_at);
       const now = new Date();
-      const hoursDiff = (now - lastViewed) / (1000 * 60 * 60); // Saat cinsinden fark
+      const hoursDiff = (now - lastViewed) / (1000 * 60 * 60);
 
-      // 3 saat geçmişse popup gösterilebilir
-      if (hoursDiff >= 3) {
-        return false;
-      } else {
+      const showOnce = window.popupShowOnce;
+      
+      if (showOnce) {
         return true;
+      } else {
+        return hoursDiff < 3;
       }
     } catch (error) {
-      console.error('Popup görüntüleme geçmişi kontrol edilirken hata:', error);
       return false;
     }
   }
 
-  // Popup görüntüleme kaydını oluştur/güncelle (3 saat aralıklarla)
+  // Popup görüntüleme kaydını oluştur/güncelle
   async function recordPopupView() {
     try {
       if (!window.supabase || typeof window.supabase.from !== 'function') {
-        console.warn('⚠️ Supabase bağlantısı yok, popup kaydı oluşturulamıyor');
         return;
       }
       
       const userIP = await getUserIP();
       
-      // IP adresini doğrula
       if (!userIP || userIP === 'unknown') {
         return;
       }
       
       const userAgent = navigator.userAgent;
       
-      // Mevcut kaydı kontrol et
-      const { data: existingRecord } = await window.supabase
+      const { data, error } = await window.supabase
         .from('popup_views')
-        .select('id')
-        .eq('ip_address', userIP)
-        .limit(1);
+        .upsert({
+          ip_address: userIP,
+          user_agent: userAgent,
+          viewed_at: new Date().toISOString()
+        }, {
+          onConflict: 'ip_address'
+        })
+        .select();
 
-      if (existingRecord && existingRecord.length > 0) {
-        // Mevcut kaydı güncelle
-        const { error } = await window.supabase
-          .from('popup_views')
-          .update({
-            viewed_at: new Date().toISOString(),
-            user_agent: userAgent
-          })
-          .eq('ip_address', userIP);
-
-        if (error) {
-          console.error('Popup görüntüleme kaydı güncellenirken hata:', error);
-        } else {
-        }
-      } else {
-        // Yeni kayıt oluştur
-        const { error } = await window.supabase
-          .from('popup_views')
-          .insert([{
-            ip_address: userIP,
-            user_agent: userAgent
-          }]);
-
-        if (error) {
-          console.error('Popup görüntüleme kaydı oluşturulurken hata:', error);
-        } else {
-        }
+      if (error) {
+        console.error('Popup görüntüleme kaydı oluşturulurken hata:', error);
       }
     } catch (error) {
       console.error('Popup görüntüleme kaydı oluşturulurken hata:', error);
@@ -920,16 +956,9 @@
   // Popup ayarlarını yükle ve göster
   async function loadAndShowPopup() {
     try {
-      // Supabase bağlantısını kontrol et
-      console.log('🔍 Supabase durumu kontrol ediliyor...');
-      console.log('🔍 window.supabase:', window.supabase);
-      
       if (!window.supabase || typeof window.supabase.from !== 'function') {
-        console.warn('⚠️ Supabase bağlantısı yok veya geçersiz, popup atlanıyor');
         return;
       }
-      
-      console.log('✅ Supabase bağlantısı mevcut, popup ayarları yükleniyor...');
 
       // Popup ayarlarını al
       const { data, error } = await window.supabase
@@ -937,7 +966,7 @@
         .select('*')
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (error && error.code !== 'PGRST116') {
         console.error('Popup ayarları yüklenirken hata:', error);
         return;
       }
@@ -946,22 +975,33 @@
         return;
       }
 
-      // Kullanıcıya sadece bir kez gösterilmesi gerekiyorsa kontrol et
-      if (data.show_once) {
+      // Popup görüntüleme geçmişini kontrol et
+      try {
         const hasViewed = await checkPopupViewHistory();
-        if (hasViewed) {
-          console.log('Popup daha önce görüntülenmiş, gösterilmiyor');
-          return;
+        
+        if (data.show_once) {
+          // Sadece bir kez göster
+          if (hasViewed) {
+            return;
+          }
+        } else {
+          // 3 saatte bir göster
+          if (hasViewed) {
+            return;
+          }
         }
+      } catch (error) {
+        // Hata durumunda popup göster
       }
 
       // Popup'ı göster
-      console.log('📢 Popup gösteriliyor...');
       showPopup(data);
 
-      // Popup gösterildi olarak işaretle
+      // Popup ayarlarını kaydet
+      window.popupShowOnce = data.show_once;
+
+      // Popup gösterildi, hemen kayıt oluştur
       if (data.show_once) {
-        console.log('Popup görüntüleme kaydı oluşturuluyor...');
         await recordPopupView();
       }
 
@@ -977,6 +1017,9 @@
     if (existingPopup) {
       existingPopup.remove();
     }
+
+    // Popup gösterildi olarak işaretle
+    window.popupShown = true;
 
     // Link URL'sini düzelt
     let linkUrl = popupData.link_url;
@@ -1025,9 +1068,7 @@
       popup.style.animation = 'popupFadeOut 0.3s ease-out';
       setTimeout(() => {
         popup.remove();
-        // Popup kapatıldığında da kayıt oluştur
-        console.log('Popup kapatıldı, kayıt oluşturuluyor...');
-        recordPopupView();
+        window.popupShown = false;
       }, 300);
     }
   }
@@ -1059,5 +1100,44 @@
 
   // Popup fonksiyonlarını global olarak erişilebilir yap
   window.closeSitePopup = closeSitePopup;
+  
+  // Debug fonksiyonu - popup durumunu kontrol et
+  window.debugPopup = async function() {
+    console.log('Popup Debug Bilgileri:');
+    console.log('window.popupShown:', window.popupShown);
+    console.log('window.popupShowOnce:', window.popupShowOnce);
+    
+    const userIP = await getUserIP();
+    console.log('Kullanıcı IP:', userIP);
+    
+    if (window.supabase) {
+      const { data: popupSettings, error: settingsError } = await window.supabase
+        .from('popup_settings')
+        .select('*')
+        .single();
+      
+      console.log('Popup ayarları:', popupSettings);
+      console.log('Popup ayarları hatası:', settingsError);
+      
+      const { data, error } = await window.supabase
+        .from('popup_views')
+        .select('*')
+        .eq('ip_address', userIP)
+        .single();
+      
+      console.log('Popup görüntüleme kaydı:', data);
+      console.log('Popup görüntüleme hatası:', error);
+      
+      if (data) {
+        const lastViewed = new Date(data.viewed_at);
+        const now = new Date();
+        const hoursDiff = (now - lastViewed) / (1000 * 60 * 60);
+        console.log('Son görüntüleme:', lastViewed);
+        console.log('Şu anki zaman:', now);
+        console.log('Saat farkı:', hoursDiff);
+        console.log('3 saat geçmiş mi?', hoursDiff >= 3);
+      }
+    }
+  };
 
 })();
