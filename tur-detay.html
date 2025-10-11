@@ -7,10 +7,18 @@
     <link href="assets/css/styles.css" rel="stylesheet" />
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Tur detayları yükleniyor...</div>
+    </div>
+
+    <!-- Page Content (initially hidden) -->
+    <div class="page-content" id="pageContent">
     <header class="site-header">
       <div class="container nav-container">
         <a class="brand" href="index.html">
-          <img src="assets/img/logo.png" alt="Logo" />
+          <img src="" alt="Logo" hidden />
           <span>Orion Turizm</span>
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
@@ -90,7 +98,7 @@
     <footer class="site-footer">
       <div class="container footer-grid">
         <div class="brand-col">
-          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <img src="" alt="Sakarya Orion Turizm" hidden />
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
@@ -103,6 +111,9 @@
         <div class="copy">© <span id="year"></span> Orion Turizm</div>
       </div>
     </footer>
+
+    <!-- Developer Signature -->
+    <div class="dev-signature">koramaz</div>
 
     <!-- Seçim Modalları -->
     <div class="modal" id="routesModal" aria-hidden="true">
@@ -145,6 +156,17 @@
       </div>
     </div>
 
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script src="assets/js/supabase-config.js"></script>
+    </div> <!-- End page-content -->
+
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/preloader.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/admin.js"></script>
   </body>

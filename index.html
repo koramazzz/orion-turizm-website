@@ -9,13 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="icon" href="assets/img/logo.png" />
+    
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">İçerik yükleniyor...</div>
+    </div>
+
+    <!-- Page Content (initially hidden) -->
+    <div class="page-content" id="pageContent">
     <header class="site-header">
       <div class="container nav-container">
         <a class="brand" href="index.html">
-          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm Logo" />
+          <img src="" alt="Sakarya Orion Turizm Logo" hidden />
           <span>Orion Turizm</span>
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
@@ -31,15 +39,11 @@
 
     <main>
       <!-- 1.1 Hazır Rotalar & Özel Rota + Dönen görseller -->
-      <section class="section section-hero" aria-label="Rotalar ve Özel Rota" id="turlar">
+      <section class="section section-hero" aria-label="Rotalar ve Özel Rota" id="turlar" data-reveal>
         <div class="container hero-grid">
           <div class="hero-carousel">
-            <div class="carousel" data-images='[
-              "https://images.unsplash.com/photo-1473625247510-8ceb1760943f?q=80&w=1400&auto=format&fit=crop",
-              "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1400&auto=format&fit=crop",
-              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1400&auto=format&fit=crop"
-            ]'>
-              <img alt="Rota görseli" />
+            <div class="carousel" data-images='[]'>
+              <img alt="Rota görseli" src="" style="min-height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" />
               <div class="carousel-dots" aria-hidden="true"></div>
             </div>
           </div>
@@ -63,11 +67,11 @@
       </section>
 
       <!-- 1.2 Taşımacılık: Öğrenci ve Personel -->
-      <section class="section" id="tasimacilik">
+      <section class="section" id="tasimacilik" data-reveal>
         <div class="container card-grid">
           <article class="card transport-card">
             <div class="visual-card">
-              <div class="visual-bg" style="--bg:url('https://images.pexels.com/photos/55821/van-vehicle-white-transportation-55821.jpeg?auto=compress&cs=tinysrgb&w=1200')"></div>
+              <div class="visual-bg" data-student-service-bg></div>
             </div>
             <div class="card-content" style="text-align:center">
               <h3>Öğrenci Servisi</h3>
@@ -77,7 +81,7 @@
           </article>
           <article class="card transport-card">
             <div class="visual-card">
-              <div class="visual-bg" style="--bg:url('https://images.pexels.com/photos/1652346/pexels-photo-1652346.jpeg?auto=compress&cs=tinysrgb&w=1200')"></div>
+              <div class="visual-bg" data-staff-service-bg></div>
             </div>
             <div class="card-content" style="text-align:center">
               <h3>Personel Servisi</h3>
@@ -88,37 +92,12 @@
         </div>
       </section>
 
-      <!-- 1.2b Taşımacılık Kurumları -->
-      <section class="section section-transport-orgs" id="tasimacilik-kurumlari">
-        <div class="container">
-          <h2>Hizmet Verdiğimiz Kurumlar</h2>
-          <div class="transport-orgs-grid">
-            <!-- Dinamik içerik buraya yüklenecek -->
-          </div>
-        </div>
-      </section>
-
-      <!-- 1.3 Yorumlar -->
-      <section class="section section-testimonials" id="yorumlar">
-        <div class="container">
-          <h2>Ziyaretçi Yorumları</h2>
-          <div class="testimonials">
-            <figure class="testimonial">
-              <blockquote id="testimonial-quote">Harika bir deneyimdi, tüm süreç çok profesyoneldi.</blockquote>
-              <figcaption id="testimonial-author">— Misafir</figcaption>
-            </figure>
-            <div class="testimonial-dots" aria-hidden="true"></div>
-          </div>
-          <p class="muted small">Google yorum entegrasyonu daha sonra eklenecektir.</p>
-        </div>
-      </section>
-
-      <!-- 1.4 Hakkımızda kısa -->
-      <section class="section section-about" id="hakkimizda">
+      <!-- 1.3 Hakkımızda kısa -->
+      <section class="section section-about" id="hakkimizda" data-reveal>
         <div class="container two-col">
           <div>
             <h2>Hakkımızda</h2>
-            <p>
+            <p data-content="about">
               Sakarya Orion Turizm olarak konforlu, güvenli ve planlı yolculuklar
               sunuyoruz. Kurumsal organizasyonlardan kişisel seyahatlere,
               deneyimli ekibimizle yanınızdayız.
@@ -126,13 +105,37 @@
 
           </div>
           <div class="visual-card">
-            <div class="visual-bg" style="--bg:url('https://images.unsplash.com/photo-1459478309853-2c33a60058e7?q=80&w=1200&auto=format&fit=crop')"></div>
+            <div class="visual-bg about-visual" style="--bg:linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></div>
           </div>
         </div>
       </section>
 
-      <!-- 1.5 Yetkili kurumlar -->
-      <section class="section section-partners" id="yetkili-kurumlar">
+      <!-- 1.4 Google Reviews -->
+      <section class="section section-testimonials" id="yorumlar" data-reveal>
+        <div class="container">
+          <h2>Yorumlar</h2>
+          <div id="googleReviewsContainer">
+            <!-- Google Reviews buraya yüklenecek -->
+            <div style="text-align: center; padding: 40px;">
+              <div class="loading-spinner" style="margin: 0 auto;"></div>
+              <p class="muted">Yorumlar yükleniyor...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.5 Taşımacılık Kurumları -->
+      <section class="section section-partners" id="tasimacilik-kurumlari" data-reveal="fade">
+        <div class="container">
+          <h2>Hizmet Verdiğimiz Kurumlar</h2>
+          <div class="logo-grid">
+            <!-- Dinamik içerik buraya yüklenecek -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 1.6 Yetkili kurumlar -->
+      <section class="section section-partners" id="yetkili-kurumlar" data-reveal="fade">
         <div class="container">
           <h2>Yetkili Kurumlar</h2>
           <div class="logo-grid">
@@ -141,8 +144,8 @@
         </div>
       </section>
 
-      <!-- 1.5b Partnerlerimiz -->
-      <section class="section section-partners" id="partnerler">
+      <!-- 1.7 Partnerlerimiz -->
+      <section class="section section-partners" id="partnerler" data-reveal="fade">
         <div class="container">
           <h2>Partnerlerimiz</h2>
           <div class="logo-grid">
@@ -151,21 +154,21 @@
         </div>
       </section>
 
-      <!-- 1.6 İletişim kısa -->
-      <section class="section section-contact" id="iletisim">
+      <!-- 1.8 İletişim kısa -->
+      <section class="section section-contact" id="iletisim" data-reveal>
         <div class="container two-col">
           <div>
             <h2>Bizimle İletişime Geçin</h2>
             <p class="muted">Teklif, rezervasyon veya bilgi için bizimle iletişime geçin.</p>
             <ul class="contact-list">
-              <li><strong>Telefon:</strong> 0 (xxx) xxx xx xx</li>
-              <li><strong>E-posta:</strong> info@orion.com.tr</li>
-              <li><strong>Adres:</strong> Sakarya, Türkiye</li>
-              <li><strong>Instagram:</strong> <a href="#" target="_blank" rel="noopener">@orion_turizm</a></li>
+              <li><strong>Telefon:</strong> <span data-contact="phone">0 (xxx) xxx xx xx</span></li>
+              <li><strong>E-posta:</strong> <span data-contact="email">info@orion.com.tr</span></li>
+              <li><strong>Adres:</strong> <span data-contact="address">Sakarya, Türkiye</span></li>
+              <li><strong>Instagram:</strong> <a href="#" target="_blank" rel="noopener" data-contact="instagram">@orion_turizm</a></li>
             </ul>
           </div>
           <div class="contact-logo">
-            <img src="assets/img/logo.png" alt="Orion Turizm Logo" />
+            <img src="" alt="Orion Turizm Logo" hidden />
           </div>
         </div>
       </section>
@@ -174,7 +177,7 @@
     <footer class="site-footer">
       <div class="container footer-grid">
         <div class="brand-col">
-          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <img src="" alt="Sakarya Orion Turizm" hidden />
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
@@ -187,6 +190,9 @@
         <div class="copy">© <span id="year"></span> Orion Turizm</div>
       </div>
     </footer>
+
+    <!-- Developer Signature -->
+    <div class="dev-signature">koramaz</div>
 
     <!-- Seçim Modalları -->
     <div class="modal" id="routesModal" aria-hidden="true">
@@ -239,7 +245,15 @@
       </div>
     </div>
 
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    </div> <!-- End page-content -->
+
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/preloader.js"></script>
     <script src="assets/js/main.js"></script>
     <script src="assets/js/admin.js"></script>
+    <script src="assets/js/google-reviews.js"></script>
   </body>
 </html>

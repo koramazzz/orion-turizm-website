@@ -9,13 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="icon" href="assets/img/logo.png" />
+    
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Kurum bilgileri yükleniyor...</div>
+    </div>
+
+    <!-- Page Content (initially hidden) -->
+    <div class="page-content" id="pageContent">
     <header class="site-header">
       <div class="container nav-container">
         <a class="brand" href="index.html">
-          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm Logo" />
+          <img src="" alt="Sakarya Orion Turizm Logo" hidden />
           <span>Orion Turizm</span>
         </a>
         <button class="nav-toggle" aria-label="Menüyü Aç/Kapat">☰</button>
@@ -78,7 +86,7 @@
     <footer class="site-footer">
       <div class="container footer-grid">
         <div class="brand-col">
-          <img src="assets/img/logo.png" alt="Sakarya Orion Turizm" />
+          <img src="" alt="Sakarya Orion Turizm" hidden />
           <p class="muted">Konforlu ve güvenli yolculuklar.</p>
         </div>
         <nav class="footer-nav">
@@ -92,6 +100,9 @@
       </div>
     </footer>
 
+    <!-- Developer Signature -->
+    <div class="dev-signature">koramaz</div>
+
     <script src="assets/js/main.js"></script>
     <script src="assets/js/admin.js"></script>
     
@@ -104,7 +115,7 @@
         document.getElementById('year').textContent = new Date().getFullYear();
       });
 
-      function loadOrgDetails() {
+      async function loadOrgDetails() {
         // URL'den kurum adını al
         const urlParams = new URLSearchParams(window.location.search);
         const orgName = urlParams.get('org');
@@ -115,9 +126,14 @@
           return;
         }
 
-        // localStorage'dan kurum bilgilerini al
-        const transportOrgs = JSON.parse(localStorage.getItem('transportOrgs') || '[]');
-        const org = transportOrgs.find(o => o.name === decodeURIComponent(orgName));
+        // Backend'den kurum bilgilerini al
+        let org = null;
+        try {
+          if (window.backendManager) {
+            const list = await window.backendManager.getTransportOrgs();
+            org = (list || []).find(o => o.name === decodeURIComponent(orgName));
+          }
+        } catch(e) { console.warn('Kurumlar alınamadı', e); }
         
         if (!org) {
           // Kurum bulunamazsa ana sayfaya yönlendir
@@ -137,28 +153,29 @@
         
         // Logo
         const logoElement = document.getElementById('orgLogo');
-        if (org.logo) {
-          logoElement.src = org.logo;
+        if (org.logo_url) {
+          logoElement.src = org.logo_url;
           logoElement.style.display = 'block';
         } else {
           logoElement.style.display = 'none';
         }
         
-        // Açıklama metni (admin panelinden gelecek)
-        const description = getOrgDescription(org.name, org.type);
-        document.getElementById('orgDescription').textContent = description;
+        // Açıklama metni (backend)
+        getOrgDescription(org.name, org.type).then(function(description){
+          document.getElementById('orgDescription').textContent = description;
+        });
         
         // Butonları oluştur
         createOrgButtons(org);
       }
 
-      function getOrgDescription(orgName, orgType) {
-        // Admin panelinden kaydedilmiş açıklamalar
-        const savedDescriptions = JSON.parse(localStorage.getItem('orgDescriptions') || '{}');
-        
-        if (savedDescriptions[orgName]) {
-          return savedDescriptions[orgName];
-        }
+      async function getOrgDescription(orgName, orgType) {
+        try {
+          if (window.backendManager) {
+            const descMap = await window.backendManager.getOrgDescriptions();
+            if (descMap && descMap[orgName]) return descMap[orgName];
+          }
+        } catch(e){ /* ignore */ }
         
         // Varsayılan açıklamalar (admin panelinde açıklama yoksa)
         if (orgType === 'school') {
@@ -175,28 +192,28 @@
         // Buton bilgileri
         const buttons = [
           {
-            key: 'contractUrl',
+            key: 'contract_url',
             label: '📄 Sözleşme İndir',
             className: 'btn btn-outline',
-            condition: org.contractUrl
+            condition: org.contract_url
           },
           {
-            key: 'vitaWebUrl', 
+            key: 'vita_web_url', 
             label: '🌐 Vita Web Paneli',
             className: 'btn btn-outline',
-            condition: org.vitaWebUrl
+            condition: org.vita_web_url
           },
           {
-            key: 'vitaAppUrl',
+            key: 'vita_app_url',
             label: '📱 Vita Uygulaması',
             className: 'btn btn-outline', 
-            condition: org.vitaAppUrl
+            condition: org.vita_app_url
           },
           {
-            key: 'paymentUrl',
+            key: 'payment_url',
             label: '💳 Ödeme Yap',
             className: 'btn btn-primary',
-            condition: org.paymentUrl
+            condition: org.payment_url
           }
         ];
         
@@ -204,7 +221,14 @@
         buttons.forEach(buttonInfo => {
           if (buttonInfo.condition) {
             const button = document.createElement('a');
-            button.href = org[buttonInfo.key];
+            let url = org[buttonInfo.key];
+            
+            // URL'yi düzelt - protokol yoksa https:// ekle
+            if (url && !url.match(/^https?:\/\//)) {
+              url = 'https://' + url;
+            }
+            
+            button.href = url;
             button.target = '_blank';
             button.rel = 'noopener noreferrer';
             button.className = buttonInfo.className;
@@ -220,5 +244,19 @@
       }
 
     </script>
+
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script src="assets/js/supabase-config.js"></script>
+    </div> <!-- End page-content -->
+
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/preloader.js"></script>
+    <script src="assets/js/main.js"></script>
   </body>
 </html>
+

@@ -1,0 +1,4 @@
+# Supabase Edge Functions Configuration
+
+[functions.send-form-email]
+verify_jwt = false  # Public endpoint, form gönderimlerinde JWT gerekmiyor

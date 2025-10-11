@@ -367,7 +367,14 @@
     </style>
   </head>
   <body>
-    <!-- Giriş Formu -->
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Admin panel yükleniyor...</div>
+    </div>
+
+    <!-- Page Content (initially hidden) -->
+    <div class="page-content" id="pageContent">
     <div id="loginSection" class="admin-login">
       <div class="login-card">
         <h2 style="text-align: center; color: var(--brand); margin-bottom: 30px;">
@@ -375,8 +382,15 @@
         </h2>
         <form id="loginForm">
           <div class="edit-group">
+            <label for="adminEmail">Email:</label>
+            <input type="email" id="adminEmail" required />
+          </div>
+          <div class="edit-group">
             <label for="adminPassword">Şifre:</label>
-            <input type="password" id="adminPassword" required />
+            <div style="position: relative;">
+              <input type="password" id="adminPassword" required style="width: 100%; padding-right: 45px;" />
+              <button type="button" id="toggleLoginPassword" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px 8px;">👁️</button>
+            </div>
           </div>
           <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
         </form>
@@ -415,12 +429,11 @@
           <div class="edit-group">
             <label>Admin Şifresi:</label>
             <div style="display: flex; gap: 12px; align-items: center;">
-              <input type="password" id="newPassword" placeholder="Yeni şifre" style="flex: 1;" />
+              <div style="position: relative; flex: 1;">
+                <input type="password" id="newPassword" placeholder="Yeni şifre" style="width: 100%; padding-right: 45px;" />
+                <button type="button" id="toggleNewPassword" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px 8px;">👁️</button>
+              </div>
               <button type="button" id="changePassword" class="btn btn-outline">🔐 Şifre Değiştir</button>
-            </div>
-            <div style="margin-top: 8px;">
-              <button type="button" id="togglePassword" class="btn btn-ghost btn-sm" style="font-size: 12px;">👁️ Mevcut Şifreyi Göster</button>
-              <p class="small muted" style="margin-top: 4px;">Mevcut şifre: <strong id="currentPasswordDisplay">••••••••</strong></p>
             </div>
           </div>
         </div>
@@ -433,7 +446,7 @@
           <div class="edit-group">
             <label>Üst Menü Logosu (Header):</label>
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
-              <img id="currentHeaderLogo" src="assets/img/logo.png" style="max-width: 150px; border: 2px solid #e6d9eb; border-radius: 8px; padding: 8px;" />
+              <img id="currentHeaderLogo" src="" hidden style="max-width: 150px; border: 2px solid #e6d9eb; border-radius: 8px; padding: 8px;" />
               <div>
                 <div class="file-upload">
                   <input type="file" id="headerLogoUpload" accept="image/*" />
@@ -448,7 +461,7 @@
           <div class="edit-group">
             <label>Sayfa İçi Logosu (Footer/İçerik):</label>
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
-              <img id="currentContentLogo" src="assets/img/logo.png" style="max-width: 150px; border: 2px solid #e6d9eb; border-radius: 8px; padding: 8px;" />
+              <img id="currentContentLogo" src="" hidden style="max-width: 150px; border: 2px solid #e6d9eb; border-radius: 8px; padding: 8px;" />
               <div>
                 <div class="file-upload">
                   <input type="file" id="contentLogoUpload" accept="image/*" />
@@ -507,7 +520,7 @@
               <!-- Öğrenci Servisi Görseli -->
               <div class="carousel-image-item">
                 <label style="font-size: 14px; font-weight: 600; color: var(--brand);">Öğrenci Servisi</label>
-                <img id="studentServiceImage" src="https://images.pexels.com/photos/55821/van-vehicle-white-transportation-55821.jpeg?auto=compress&cs=tinysrgb&w=400" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px; margin: 8px 0;" />
+                <img id="studentServiceImage" src="" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px; margin: 8px 0;" data-student-service-image />
                 <div class="file-upload" style="margin-top: 8px;">
                   <input type="file" id="studentServiceImageUpload" accept="image/*" />
                   📁 Değiştir
@@ -517,7 +530,7 @@
               <!-- Personel Servisi Görseli -->
               <div class="carousel-image-item">
                 <label style="font-size: 14px; font-weight: 600; color: var(--brand);">Personel Servisi</label>
-                <img id="staffServiceImage" src="https://images.pexels.com/photos/1652346/pexels-photo-1652346.jpeg?auto=compress&cs=tinysrgb&w=400" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px; margin: 8px 0;" />
+                <img id="staffServiceImage" src="" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px; margin: 8px 0;" data-staff-service-image />
                 <div class="file-upload" style="margin-top: 8px;">
                   <input type="file" id="staffServiceImageUpload" accept="image/*" />
                   📁 Değiştir
@@ -532,6 +545,19 @@
         <div class="admin-section">
           <h3>🏛️ Yetkili Kurumlar ve Partnerler</h3>
           
+          <!-- Hizmet Verdiğimiz Kurumlar -->
+          <div class="edit-group">
+            <label>Hizmet Verdiğimiz Kurumlar:</label>
+            <div id="serviceOrgsList" class="dynamic-list">
+              <div class="list-item">
+                <input type="text" placeholder="Kurum Adı" class="service-org-name" />
+                <input type="url" placeholder="www.kurum.com (https:// otomatik eklenir)" class="service-org-url" />
+                <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeServiceOrg(this)">🗑️</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addServiceOrg()">➕ Kurum Ekle</button>
+          </div>
+
           <!-- Yetkili Kurumlar -->
           <div class="edit-group">
             <label>Yetkili Kurumlar:</label>
@@ -648,15 +674,59 @@
             <label>Personel Servisi - Açıklama:</label>
             <textarea id="staffServiceDesc">Fabrika ve kurumlar için servis hizmeti.</textarea>
           </div>
+                  <!-- Popup Yönetimi -->
+        <div class="admin-section">
+          <h3>🎯 Popup Yönetimi</h3>
+          <p class="muted">Siteye ilk girişte kullanıcılara gösterilecek popup'ı yönetin.</p>
+          
+          <div class="edit-group">
+            <label style="display: flex; align-items: center; gap: 10px;">
+              <input type="checkbox" id="popupActive" onchange="togglePopupActive()">
+              Popup'ı Aktif Et
+            </label>
+          </div>
+          <div class="edit-group">
+            <label>Popup Başlığı:</label>
+            <input type="text" id="popupTitle" placeholder="Popup başlığı girin">
+          </div>
+          <div class="edit-group">
+            <label>Popup İçeriği:</label>
+            <textarea id="popupContent" placeholder="Popup içeriğini girin" rows="3"></textarea>
+          </div>
+          <div class="edit-group">
+            <label>Popup Görseli:</label>
+            <div class="file-upload" onclick="document.getElementById('popupImage').click()">
+              <input type="file" id="popupImage" accept="image/*" onchange="handlePopupImageUpload(this)">
+              <span id="popupImageText">Görsel Seç</span>
+            </div>
+            <div id="popupImagePreview" style="margin-top: 10px;"></div>
+          </div>
+          <div class="edit-group">
+            <label>Link URL:</label>
+            <input type="url" id="popupLinkUrl" placeholder="https://example.com">
+          </div>
+          <div class="edit-group">
+            <label>Link Metni:</label>
+            <input type="text" id="popupLinkText" placeholder="Detay" value="Detay">
+          </div>
+          <div class="edit-group">
+            <label style="display: flex; align-items: center; gap: 10px;">
+              <input type="checkbox" id="popupShowOnce" checked>
+              Kullanıcıya sadece bir kez göster
+            </label>
+            <p class="small muted" style="margin-top: 4px;">
+              💡 İşaretli: Kullanıcıya sadece bir kez gösterilir<br>
+              💡 İşaretsiz: Her 3 saatte bir gösterilir
+            </p>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <button onclick="savePopupSettings()" class="btn btn-primary">Popup Ayarlarını Kaydet</button>
+            <button onclick="previewPopup()" class="btn btn-outline">Önizle</button>
+          </div>
         </div>
 
-
-
-
-
-
         </div>
-
+        </div>
         <!-- TURLAR KATEGORİSİ -->
         <div id="turlar-category" class="category-content" style="display: none;">
           <div class="admin-section">
@@ -793,7 +863,129 @@
       <button id="logoutBtn" class="btn btn-outline logout-btn">🚪 Çıkış</button>
     </div>
 
+    </div> <!-- End page-content -->
+
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/preloader.js"></script>
     <script src="assets/js/admin.js"></script>
+    
+    <!-- Şifre Yönetimi -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Şifre değiştirme
+        const changePasswordBtn = document.getElementById('changePassword');
+        const newPasswordInput = document.getElementById('newPassword');
+        const toggleNewPasswordBtn = document.getElementById('toggleNewPassword');
+        
+        // Login şifre toggle
+        const loginPasswordInput = document.getElementById('adminPassword');
+        const toggleLoginPasswordBtn = document.getElementById('toggleLoginPassword');
+        
+        if (toggleLoginPasswordBtn && loginPasswordInput) {
+          toggleLoginPasswordBtn.addEventListener('click', function() {
+            if (loginPasswordInput.type === 'password') {
+              loginPasswordInput.type = 'text';
+              toggleLoginPasswordBtn.textContent = '🙈';
+            } else {
+              loginPasswordInput.type = 'password';
+              toggleLoginPasswordBtn.textContent = '👁️';
+            }
+          });
+        }
+        
+        // Yeni şifre toggle (admin panelinde)
+        if (toggleNewPasswordBtn && newPasswordInput) {
+          toggleNewPasswordBtn.addEventListener('click', function() {
+            if (newPasswordInput.type === 'password') {
+              newPasswordInput.type = 'text';
+              toggleNewPasswordBtn.textContent = '🙈';
+            } else {
+              newPasswordInput.type = 'password';
+              toggleNewPasswordBtn.textContent = '👁️';
+            }
+          });
+        }
+        
+        // Şifre değiştirme
+        if (changePasswordBtn && newPasswordInput) {
+          changePasswordBtn.addEventListener('click', async function() {
+            const newPassword = newPasswordInput.value.trim();
+            
+            if (!newPassword) {
+              alert('Lütfen yeni şifrenizi girin!');
+              return;
+            }
+            
+            if (newPassword.length < 6) {
+              alert('Şifre en az 6 karakter olmalıdır!');
+              return;
+            }
+            
+            const confirmChange = confirm(
+              '🔐 ŞİFRE DEĞİŞTİRME\n\n' +
+              'Admin şifrenizi değiştirmek istediğinizden emin misiniz?\n\n' +
+              '⚠️ Yeni şifreyi unutmayın!'
+            );
+            
+            if (!confirmChange) return;
+            
+            try {
+              changePasswordBtn.disabled = true;
+              changePasswordBtn.textContent = '⏳ Değiştiriliyor...';
+              
+              if (window.backendManager) {
+                // 1. Supabase Auth şifresini güncelle
+                const authSuccess = await window.backendManager.updateAuthPassword(newPassword);
+                
+                // 2. admin_settings tablosunu güncelle (yedek için)
+                const settingsSuccess = await window.backendManager.setAdminPassword(newPassword);
+                
+                if (authSuccess && settingsSuccess) {
+                  alert('✅ Şifre başarıyla değiştirildi!\n\n🔑 Yeni şifrenizi unutmayın!');
+                  newPasswordInput.value = '';
+                } else if (authSuccess) {
+                  alert('✅ Şifre değiştirildi (Auth güncellendi)\n\n⚠️ Ancak yedek ayarlar güncellenemedi.');
+                  newPasswordInput.value = '';
+                } else {
+                  alert('Şifre değiştirilemedi. Lütfen tekrar deneyin.');
+                }
+              } else {
+                alert('Backend bağlantısı yok. Lütfen sayfayı yenileyin.');
+              }
+            } catch (error) {
+              console.error('Şifre değiştirme hatası:', error);
+              alert('Bir hata oluştu. Console\'u kontrol edin.');
+            } finally {
+              changePasswordBtn.disabled = false;
+              changePasswordBtn.textContent = '🔐 Şifre Değiştir';
+            }
+          });
+        }
+      });
+      
+      // Global acil durum fonksiyonu
+      window.emergencyPasswordReset = function() {
+        if (window.backendManager) {
+          return window.backendManager.emergencyPasswordReset();
+        } else {
+          console.error('Backend manager bulunamadı!');
+          return false;
+        }
+      };
+      
+      // Şifre sıfırlama kodu oluştur
+      window.generateResetCode = function() {
+        if (window.backendManager) {
+          return window.backendManager.generatePasswordResetCode();
+        } else {
+          console.error('Backend manager bulunamadı!');
+          return false;
+        }
+      };
+    </script>
     
     <!-- Dinamik Liste Fonksiyonları -->
     <script>
@@ -832,7 +1024,7 @@
           item.querySelector('.org-vita-web').value = data.vitaWebUrl||'';
           item.querySelector('.org-vita-app').value = data.vitaAppUrl||'';
           item.querySelector('.org-payment').value = data.paymentUrl||'';
-          if(data.logo){ const p=item.querySelector('.org-logo-preview'); p.src=data.logo; p.style.display='block'; }
+          if(data.logo){ const p=item.querySelector('.org-logo-preview'); p.src=`${data.logo}?v=${Date.now()}`; p.style.display='block'; }
         }
       }
 
@@ -840,12 +1032,62 @@
         const up = item.querySelector('.org-logo-upload');
         const pv = item.querySelector('.org-logo-preview');
         if(!up || !pv) return;
-        up.addEventListener('change', function(e){
+        up.addEventListener('change', async function(e){
           const f = e.target.files && e.target.files[0]; if(!f) return;
           const r = new FileReader();
-          r.onload = function(ev){ pv.src = ev.target.result; pv.style.display='block'; };
+          r.onload = async function(ev){ 
+            pv.src = ev.target.result; 
+            pv.style.display='block';
+            
+            // Otomatik olarak backend'e kaydet
+            try {
+              const orgName = item.querySelector('.org-name').value || 'temp';
+              const orgId = orgName.toLowerCase()
+                .replace(/ı/g, 'i')
+                .replace(/ğ/g, 'g')
+                .replace(/ü/g, 'u')
+                .replace(/ş/g, 's')
+                .replace(/ö/g, 'o')
+                .replace(/ç/g, 'c')
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '');
+              
+              if (window.backendManager) {
+                const publicUrl = await window.backendManager.uploadTransportOrgLogo(ev.target.result, orgId);
+                console.log('✅ Kurum logosu otomatik kaydedildi:', publicUrl);
+                
+                // Cache-busting ile görseli güncelle
+                pv.src = `${publicUrl}?v=${Date.now()}`;
+                
+                // Başarı mesajı
+                if (window.adminPanel) {
+                  window.adminPanel.showSuccessMessage();
+                }
+              }
+            } catch (error) {
+              console.error('Kurum logosu kaydetme hatası:', error);
+            }
+          };
           r.readAsDataURL(f);
         });
+      }
+
+      // Hizmet Verdiğimiz Kurum Ekleme
+      function addServiceOrg() {
+        const container = document.getElementById('serviceOrgsList');
+        const newItem = document.createElement('div');
+        newItem.className = 'list-item';
+        newItem.innerHTML = `
+          <input type="text" placeholder="Kurum Adı" class="service-org-name" />
+          <input type="url" placeholder="www.kurum.com (https:// otomatik eklenir)" class="service-org-url" />
+          <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeServiceOrg(this)">🗑️</button>
+        `;
+        container.appendChild(newItem);
+      }
+      
+      // Hizmet Verdiğimiz Kurum Silme
+      function removeServiceOrg(button) {
+        button.parentElement.remove();
       }
 
       // Yetkili Kurum Ekleme
@@ -1057,7 +1299,6 @@
             previewElement.src = e.target.result;
             previewElement.style.display = 'block';
             
-            // Görseli localStorage'a kaydet
             const tourDetailItem = event.target.closest('.tour-details-item');
             const link = tourDetailItem.querySelector('.tour-detail-link').value;
             if (link) {
@@ -1068,13 +1309,17 @@
         }
       }
       
-      function saveTourDetailImage(link, imageType, imageData) {
-        let tourDetailImages = JSON.parse(localStorage.getItem('tourDetailImages') || '{}');
-        if (!tourDetailImages[link]) {
-          tourDetailImages[link] = {};
+      async function saveTourDetailImage(link, imageType, imageData) {
+        try {
+          // Tur ID'si link'ten al (URL-safe hale getir)
+          const tourId = link.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, imageType);
+          console.log(`✅ Tur detay görseli backend'e yüklendi (${tourId}/${imageType}):`, publicUrl);
+          return publicUrl;
+        } catch (error) {
+          console.error('Tur detay görsel yükleme hatası:', error);
+          alert('Tur detay görseli yüklenirken hata oluştu: ' + error.message);
         }
-        tourDetailImages[link][imageType] = imageData;
-        localStorage.setItem('tourDetailImages', JSON.stringify(tourDetailImages));
       }
       
       // Tur görseli upload fonksiyonları
@@ -1092,25 +1337,47 @@
         const file = event.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = function(e) {
+          reader.onload = async function(e) {
+            // Önizlemeyi hemen güncelle
             previewElement.src = e.target.result;
             previewElement.style.display = 'block';
             
-            // Görseli localStorage'a kaydet
+            // Tur bilgilerini al
             const tourItem = event.target.closest('.list-item');
             const tourName = tourItem.querySelector('.tour-name').value;
-            if (tourName) {
-              saveTourImage(tourName, e.target.result);
+            const tourLink = tourItem.querySelector('.tour-link').value;
+            
+            if (tourName && tourLink) {
+              // Görseli yükle
+              await saveTourImage(tourName, tourLink, e.target.result, previewElement);
+            } else {
+              alert('Lütfen önce tur adı ve detay linkini girin!');
             }
           };
           reader.readAsDataURL(file);
         }
       }
       
-      function saveTourImage(tourName, imageData) {
-        let tourImages = JSON.parse(localStorage.getItem('tourImages') || '{}');
-        tourImages[tourName] = imageData;
-        localStorage.setItem('tourImages', JSON.stringify(tourImages));
+      async function saveTourImage(tourName, tourLink, imageData, previewElement) {
+        try {
+          // Tur ID'si olarak link kullan (zaten URL-safe)
+          const tourId = tourLink;
+          const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, 'main');
+          console.log(`✅ Tur görseli backend'e yüklendi (${tourId}):`, publicUrl);
+          
+          // Cache-busting ile önizlemeyi güncelle
+          setTimeout(() => {
+            previewElement.src = `${publicUrl}?v=${Date.now()}`;
+          }, 500);
+          
+          // Değişiklikleri backend'e kaydet
+          await window.adminPanel.saveChanges();
+          
+          return publicUrl;
+        } catch (error) {
+          console.error('Tur görsel yükleme hatası:', error);
+          alert('Tur görseli yüklenirken hata oluştu: ' + error.message);
+        }
       }
       
       // Form Alanı Ekleme
@@ -1322,4 +1589,3 @@
     </script>
   </body>
 </html>
-
