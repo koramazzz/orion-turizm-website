@@ -2186,8 +2186,8 @@ class ContentUpdater {
   static async loadMainPageImages() {
     if (!window.backendManager) return;
     
-    // Sadece home.html'de çalıştır
-    if (!window.location.pathname.includes('home.html') && window.location.pathname !== '/') {
+    // Sadece index.html'de çalıştır
+    if (!window.location.pathname.includes('index.html') && window.location.pathname !== '/') {
       return;
     }
 
