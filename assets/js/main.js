@@ -380,6 +380,10 @@
 
   // Sayfa yüklendiğinde backend verilerini yükle
   document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM yüklendi, backend verileri yükleniyor...');
+    console.log('🔍 Supabase durumu:', window.supabase);
+    console.log('🔍 Preloader durumu:', window.preloader);
+    
     waitForPreloader();
   });
 
@@ -837,7 +841,10 @@
   // Popup görüntüleme geçmişini kontrol et (3 saat aralıklarla)
   async function checkPopupViewHistory() {
     try {
-      if (!window.supabase) return false;
+      if (!window.supabase || typeof window.supabase.from !== 'function') {
+        console.warn('⚠️ Supabase bağlantısı yok, popup geçmişi kontrol edilemiyor');
+        return false;
+      }
       
       const userIP = await getUserIP();
       
@@ -882,7 +889,10 @@
   // Popup görüntüleme kaydını oluştur/güncelle (3 saat aralıklarla)
   async function recordPopupView() {
     try {
-      if (!window.supabase) return;
+      if (!window.supabase || typeof window.supabase.from !== 'function') {
+        console.warn('⚠️ Supabase bağlantısı yok, popup kaydı oluşturulamıyor');
+        return;
+      }
       
       const userIP = await getUserIP();
       
@@ -937,9 +947,15 @@
   async function loadAndShowPopup() {
     try {
       // Supabase bağlantısını kontrol et
-      if (!window.supabase) {
+      console.log('🔍 Supabase durumu kontrol ediliyor...');
+      console.log('🔍 window.supabase:', window.supabase);
+      
+      if (!window.supabase || typeof window.supabase.from !== 'function') {
+        console.warn('⚠️ Supabase bağlantısı yok veya geçersiz, popup atlanıyor');
         return;
       }
+      
+      console.log('✅ Supabase bağlantısı mevcut, popup ayarları yükleniyor...');
 
       // Popup ayarlarını al
       const { data, error } = await window.supabase
