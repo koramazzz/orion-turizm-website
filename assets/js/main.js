@@ -118,8 +118,6 @@
       } catch (e) {
         console.error('❌ Carousel görselleri parse edilemedi:', e);
       }
-    } else {
-      console.warn('⚠️ Carousel görselleri bulunamadı');
     }
 
     // Logo güncellemeleri
