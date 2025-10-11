@@ -2186,8 +2186,8 @@ class ContentUpdater {
   static async loadMainPageImages() {
     if (!window.backendManager) return;
     
-    // Sadece index.html'de çalıştır
-    if (!window.location.pathname.includes('index.html') && window.location.pathname !== '/') {
+    // Sadece home.html'de çalıştır
+    if (!window.location.pathname.includes('home.html') && window.location.pathname !== '/') {
       return;
     }
 
@@ -2243,7 +2243,7 @@ class ContentUpdater {
             let currentIndex = 0;
             
             const renderCarousel = () => {
-              // Smooth fade transition
+              // Smooth fade transition - daha hızlı ve temiz
               carouselImg.style.opacity = '0';
               
               setTimeout(() => {
@@ -2261,15 +2261,15 @@ class ContentUpdater {
                   dots.appendChild(btn);
                 });
                 
-                // Fade in
+                // Fade in - daha hızlı
                 setTimeout(() => {
                   carouselImg.style.opacity = '1';
-                }, 50);
-              }, 300); // Fade out duration
+                }, 10);
+              }, 150); // Daha kısa fade out duration
             };
             
-            // CSS transition ekle
-            carouselImg.style.transition = 'opacity 0.3s ease-in-out';
+            // CSS transition ekle - daha hızlı ve temiz
+            carouselImg.style.transition = 'opacity 0.15s ease-in-out';
             
             renderCarousel();
             
