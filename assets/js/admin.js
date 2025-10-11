@@ -1745,7 +1745,7 @@ class ContentUpdater {
         const logoGrid = document.querySelector('#yetkili-kurumlar .logo-grid');
       if (logoGrid && institutionData.length > 0) {
         // Dinamik kaydırma için container oluştur
-        if (institutionData.length > 5) {
+        if (institutionData.length >= 5) {
           logoGrid.innerHTML = `
             <div class="partners-container">
               <div class="partners-scroll" id="institutionsScroll">
@@ -1797,7 +1797,7 @@ class ContentUpdater {
       const partnerGrid = document.querySelector('#partnerler .logo-grid');
       if (partnerGrid && partnerData.length > 0) {
         // Dinamik kaydırma için container oluştur
-        if (partnerData.length > 5) {
+        if (partnerData.length >= 5) {
           partnerGrid.innerHTML = `
             <div class="partners-container">
               <div class="partners-scroll" id="partnersScroll">

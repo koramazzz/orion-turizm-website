@@ -306,8 +306,8 @@
       return;
     }
 
-    // Dinamik kaydırma için container oluştur (5'ten fazla kurum varsa)
-    if (serviceOrgData.length > 5) {
+    // Dinamik kaydırma için container oluştur (5 veya daha fazla kurum varsa)
+    if (serviceOrgData.length >= 5) {
       container.innerHTML = `
         <div class="partners-container">
           <div class="partners-scroll" id="serviceOrgsScroll">

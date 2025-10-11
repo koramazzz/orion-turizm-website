@@ -783,7 +783,7 @@ a{color:inherit;text-decoration:none}
 .testimonial-dots button.active{background:var(--brand)}
 
 /* Partners */
-.logo-grid{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;justify-content:flex-start}
+.logo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:16px}
 .logo-pill{display:flex;align-items:center;justify-content:center;border:1px solid #e6d9eb;border-radius:999px;padding:16px 20px;color:var(--brand);background:linear-gradient(180deg,#fff 0%,#fdfdfe 30%,#fbfafc 70%,#f9f7fb 100%);box-shadow:0 6px 18px rgba(122,28,134,.06);font-weight:600;transition:all .2s;min-height:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 200px;width:200px;cursor:pointer}
 .logo-pill:hover{border-color:#d8c7df;box-shadow:0 10px 24px rgba(122,28,134,.12);transform:translateY(-2px);background:linear-gradient(180deg,#f9f7fb 0%,#f5f0f7 30%,#f0e8f3 70%,#e8dceb 100%)}
 .logo-pill:active{transform:translateY(0);box-shadow:0 4px 12px rgba(122,28,134,.15);background:var(--brand);color:#fff;border-color:var(--brand)}
@@ -800,8 +800,8 @@ a{color:inherit;text-decoration:none}
 
 /* Responsive - Mobil cihazlarda 2 sütun */
 @media (max-width:768px){
-  .logo-grid{grid-template-columns:repeat(2,1fr)}
-  .partner-item{width:calc(50% - 8px);min-width:150px}
+  .logo-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .partner-item{width:calc(50% - 6px);min-width:140px}
 }
 
 /* Kaydırma butonları */
