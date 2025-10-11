@@ -1744,42 +1744,18 @@ class ContentUpdater {
         // Ana sayfadaki yetkili kurumlar bölümünü güncelle
         const logoGrid = document.querySelector('#yetkili-kurumlar .logo-grid');
       if (logoGrid && institutionData.length > 0) {
-        // Dinamik kaydırma için container oluştur
-        if (institutionData.length >= 5) {
-          logoGrid.innerHTML = `
-            <div class="partners-container">
-              <div class="partners-scroll" id="institutionsScroll">
-                ${institutionData.map(inst => `
-                  <div class="partner-item">
-                    <a class="logo-pill" href="${inst.url}" target="_blank" rel="noopener" title="${inst.name}">
-                      ${inst.name}
-                    </a>
-                  </div>
-                `).join('')}
-              </div>
-              <div class="scroll-buttons">
-                <button class="scroll-btn" id="institutionsScrollLeft">‹</button>
-                <button class="scroll-btn" id="institutionsScrollRight">›</button>
-              </div>
-            </div>
-          `;
-          
-          // Kaydırma butonları için event listener'lar ekle
-          this.addScrollButtons('#institutionsScroll', '#institutionsScrollLeft', '#institutionsScrollRight');
-        } else {
-          // Az sayıda kurum varsa normal flex düzen kullan
-          logoGrid.innerHTML = '';
-          institutionData.forEach(inst => {
-            const link = document.createElement('a');
-            link.className = 'logo-pill';
-            link.href = inst.url;
-            link.target = '_blank';
-            link.rel = 'noopener';
-            link.textContent = inst.name;
-            link.title = inst.name;
-            logoGrid.appendChild(link);
-          });
-        }
+        // Responsive kaydırma sistemi - her zaman kullan
+        logoGrid.innerHTML = '';
+        institutionData.forEach(inst => {
+          const link = document.createElement('a');
+          link.className = 'logo-pill';
+          link.href = inst.url;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = inst.name;
+          link.title = inst.name;
+          logoGrid.appendChild(link);
+        });
       }
     }
 
@@ -1796,42 +1772,18 @@ class ContentUpdater {
       // Ana sayfadaki partnerler bölümünü güncelle
       const partnerGrid = document.querySelector('#partnerler .logo-grid');
       if (partnerGrid && partnerData.length > 0) {
-        // Dinamik kaydırma için container oluştur
-        if (partnerData.length >= 5) {
-          partnerGrid.innerHTML = `
-            <div class="partners-container">
-              <div class="partners-scroll" id="partnersScroll">
-                ${partnerData.map(partner => `
-                  <div class="partner-item">
-                    <a class="logo-pill" href="${partner.url}" target="_blank" rel="noopener" title="${partner.name}">
-                      ${partner.name}
-                    </a>
-                  </div>
-                `).join('')}
-              </div>
-              <div class="scroll-buttons">
-                <button class="scroll-btn" id="partnersScrollLeft">‹</button>
-                <button class="scroll-btn" id="partnersScrollRight">›</button>
-              </div>
-            </div>
-          `;
-          
-          // Kaydırma butonları için event listener'lar ekle
-          this.addScrollButtons('#partnersScroll', '#partnersScrollLeft', '#partnersScrollRight');
-        } else {
-          // Az sayıda partner varsa normal flex düzen kullan
+        // Responsive kaydırma sistemi - her zaman kullan
         partnerGrid.innerHTML = '';
-          partnerData.forEach(partner => {
-            const link = document.createElement('a');
-            link.className = 'logo-pill';
-            link.href = partner.url;
-            link.target = '_blank';
-            link.rel = 'noopener';
-            link.textContent = partner.name;
-            link.title = partner.name;
-            partnerGrid.appendChild(link);
-          });
-        }
+        partnerData.forEach(partner => {
+          const link = document.createElement('a');
+          link.className = 'logo-pill';
+          link.href = partner.url;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = partner.name;
+          link.title = partner.name;
+          partnerGrid.appendChild(link);
+        });
       }
     }
 

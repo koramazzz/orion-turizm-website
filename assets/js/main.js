@@ -304,36 +304,12 @@
       return;
     }
 
-    // Dinamik kaydırma için container oluştur (5 veya daha fazla kurum varsa)
-    if (serviceOrgData.length >= 5) {
-      container.innerHTML = `
-        <div class="partners-container">
-          <div class="partners-scroll" id="serviceOrgsScroll">
-            ${serviceOrgData.map(org => `
-              <div class="partner-item">
-                <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
-                  ${org.name}
-                </a>
-              </div>
-            `).join('')}
-          </div>
-          <div class="scroll-buttons">
-            <button class="scroll-btn" id="serviceOrgsScrollLeft">‹</button>
-            <button class="scroll-btn" id="serviceOrgsScrollRight">›</button>
-          </div>
-        </div>
-      `;
-      
-      // Kaydırma butonları için event listener'lar ekle
-      addScrollButtons('#serviceOrgsScroll', '#serviceOrgsScrollLeft', '#serviceOrgsScrollRight');
-    } else {
-      // Az sayıda kurum varsa normal flex düzen kullan
-      container.innerHTML = serviceOrgData.map(org => `
-        <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
-          ${org.name}
-        </a>
-      `).join('');
-    }
+    // Responsive kaydırma sistemi - her zaman kullan
+    container.innerHTML = serviceOrgData.map(org => `
+      <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
+        ${org.name}
+      </a>
+    `).join('');
   }
 
   // Kaydırma butonları için yardımcı fonksiyon
