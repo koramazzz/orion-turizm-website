@@ -107,10 +107,8 @@
           console.log('✅ Carousel bulundu, görseller güncelleniyor...');
           carousel.setAttribute('data-images', JSON.stringify(images));
           // Carousel'i yeniden başlat
-          if (window.initializeCarousel) {
-            console.log('🔄 Carousel yeniden başlatılıyor...');
-            window.initializeCarousel();
-          }
+          console.log('🔄 Carousel yeniden başlatılıyor...');
+          initializeCarousel();
         } else {
           console.warn('⚠️ Carousel bulunamadı veya görseller boş');
         }
@@ -982,14 +980,88 @@
         console.log(`✅ ${images.length} adet carousel görseli yüklendi`);
         
         // Carousel'i yeniden başlat
-        if (window.initializeCarousel) {
-          window.initializeCarousel();
-        }
+        initializeCarousel();
       } else {
         console.warn('⚠️ Hiç carousel görseli yüklenemedi');
       }
     } catch (error) {
       console.error('❌ Carousel yükleme hatası:', error);
+    }
+  }
+
+  // Carousel'i başlat
+  function initializeCarousel() {
+    const carousel = document.querySelector('.carousel');
+    if (!carousel) return;
+    
+    const carouselImg = carousel.querySelector('img');
+    const dots = carousel.querySelector('.carousel-dots');
+    
+    if (!carouselImg || !dots) {
+      console.warn('⚠️ Carousel img veya dots bulunamadı');
+      return;
+    }
+    
+    const dataImages = carousel.getAttribute('data-images');
+    if (!dataImages) {
+      console.warn('⚠️ Carousel data-images bulunamadı');
+      return;
+    }
+    
+    try {
+      const images = JSON.parse(dataImages);
+      if (!images || images.length === 0) {
+        console.warn('⚠️ Carousel görselleri boş');
+        return;
+      }
+      
+      console.log('🎠 Carousel başlatılıyor:', images.length, 'görsel');
+      
+      let currentIndex = 0;
+      
+      const renderCarousel = () => {
+        // Smooth fade transition
+        carouselImg.style.opacity = '0';
+        
+        setTimeout(() => {
+          carouselImg.src = images[currentIndex];
+          console.log(`🎠 Carousel görsel değiştirildi: ${currentIndex} -> ${images[currentIndex]}`);
+          
+          // Dots'ları güncelle
+          dots.innerHTML = '';
+          images.forEach((_, i) => {
+            const btn = document.createElement('button');
+            if (i === currentIndex) btn.classList.add('active');
+            btn.addEventListener('click', () => {
+              currentIndex = i;
+              renderCarousel();
+            });
+            dots.appendChild(btn);
+          });
+          
+          // Fade in
+          setTimeout(() => {
+            carouselImg.style.opacity = '1';
+          }, 10);
+        }, 150);
+      };
+      
+      // CSS transition ekle
+      carouselImg.style.transition = 'opacity 0.15s ease-in-out';
+      
+      // İlk görseli göster
+      renderCarousel();
+      
+      // Auto-rotate (4 saniyede bir)
+      setInterval(() => {
+        currentIndex = (currentIndex + 1) % images.length;
+        renderCarousel();
+      }, 4000);
+      
+      console.log('✅ Carousel başarıyla başlatıldı');
+      
+    } catch (error) {
+      console.error('❌ Carousel başlatma hatası:', error);
     }
   }
 
