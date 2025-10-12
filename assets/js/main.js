@@ -117,6 +117,10 @@
       } catch (e) { 
         console.error('❌ Carousel görselleri parse edilemedi:', e);
       }
+    } else {
+      // Carousel görselleri yoksa backend storage'dan yükle
+      console.log('🔄 Carousel görselleri backend storage\'dan yükleniyor...');
+      loadCarouselFromStorage();
     }
 
     // Logo güncellemeleri
@@ -127,6 +131,10 @@
         img.src = content.headerLogo;
         img.hidden = false;
       });
+    } else {
+      // Header logo yoksa backend storage'dan yükle
+      console.log('🔄 Header logo backend storage\'dan yükleniyor...');
+      loadHeaderLogoFromStorage();
     }
 
     // Sayfa içi logo (iletişim bölümündeki logo)
@@ -136,6 +144,10 @@
         img.src = content.contentLogo;
         img.hidden = false;
       });
+    } else {
+      // Content logo yoksa backend storage'dan yükle
+      console.log('🔄 Content logo backend storage\'dan yükleniyor...');
+      loadContentLogoFromStorage();
     }
 
     // İletişim bilgileri
@@ -184,6 +196,10 @@
       aboutVisuals.forEach(visual => {
         visual.style.setProperty('--bg', `url(${content.aboutImage})`);
       });
+    } else {
+      // About image yoksa backend storage'dan yükle
+      console.log('🔄 About image backend storage\'dan yükleniyor...');
+      loadAboutImageFromStorage();
     }
   }
 
@@ -812,6 +828,171 @@
     }
   }
 
+  // Header logo'yu backend storage'dan yükle
+  async function loadHeaderLogoFromStorage() {
+    if (!window.backendManager) return;
+    
+    try {
+      const headerLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/header.png');
+      const cacheBuster = `?v=${Date.now()}`;
+      const headerImgs = document.querySelectorAll('.brand img');
+      
+      if (headerImgs.length > 0) {
+        const response = await fetch(headerLogoUrl, { method: 'HEAD' });
+        if (response.ok) {
+          headerImgs.forEach(img => {
+            img.src = headerLogoUrl + cacheBuster;
+            img.hidden = false;
+            img.onerror = () => {
+              console.warn('Header logo yüklenemedi, cache-buster olmadan deneniyor');
+              img.src = headerLogoUrl;
+            };
+          });
+          console.log('✅ Header logo backend storage\'dan yüklendi');
+        } else {
+          console.warn('⚠️ Header logo backend storage\'da bulunamadı');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Header logo yükleme hatası:', error);
+    }
+  }
+
+  // Content logo'yu backend storage'dan yükle
+  async function loadContentLogoFromStorage() {
+    if (!window.backendManager) return;
+    
+    try {
+      const contentLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/content.png');
+      const cacheBuster = `?v=${Date.now()}`;
+      const contentImgs = document.querySelectorAll('.contact-logo img');
+      
+      if (contentImgs.length > 0) {
+        const response = await fetch(contentLogoUrl, { method: 'HEAD' });
+        if (response.ok) {
+          contentImgs.forEach(img => {
+            img.src = contentLogoUrl + cacheBuster;
+            img.hidden = false;
+            img.onerror = () => {
+              console.warn('Content logo yüklenemedi, cache-buster olmadan deneniyor');
+              img.src = contentLogoUrl;
+            };
+          });
+          console.log('✅ Content logo backend storage\'dan yüklendi');
+        } else {
+          console.warn('⚠️ Content logo backend storage\'da bulunamadı');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Content logo yükleme hatası:', error);
+    }
+  }
+
+  // About image'ı backend storage'dan yükle
+  async function loadAboutImageFromStorage() {
+    if (!window.backendManager) return;
+    
+    try {
+      // Farklı path'leri dene (Supabase storage tablosuna göre)
+      const possiblePaths = [
+        'about/main.png',  // Gerçek path (storage tablosunda görülen)
+      ];
+      
+      const aboutVisuals = document.querySelectorAll('.about-visual');
+      if (aboutVisuals.length === 0) return;
+      
+      let found = false;
+      
+      for (const path of possiblePaths) {
+        try {
+          const aboutImageUrl = window.backendManager.getImageUrl('site-images', path);
+          console.log(`🔍 About image path deneniyor: ${path} -> ${aboutImageUrl}`);
+          
+          const response = await fetch(aboutImageUrl, { method: 'HEAD' });
+          if (response.ok) {
+            const cacheBuster = `?v=${Date.now()}`;
+            aboutVisuals.forEach(visual => {
+              visual.style.setProperty('--bg', `url('${aboutImageUrl}${cacheBuster}')`);
+            });
+            console.log(`✅ About image backend storage'dan yüklendi: ${path}`);
+            found = true;
+            break;
+          } else {
+            console.log(`⚠️ About image bulunamadı: ${path} (${response.status})`);
+          }
+        } catch (error) {
+          console.log(`❌ About image path hatası: ${path}`, error.message);
+        }
+      }
+      
+      if (!found) {
+        console.warn('⚠️ About image hiçbir path\'te bulunamadı');
+      }
+    } catch (error) {
+      console.error('❌ About image yükleme hatası:', error);
+    }
+  }
+
+  // Carousel görsellerini backend storage'dan yükle
+  async function loadCarouselFromStorage() {
+    if (!window.backendManager) return;
+    
+    try {
+      const carousel = document.querySelector('.carousel');
+      if (!carousel) return;
+      
+      const images = [];
+      
+      // Farklı carousel path'lerini dene (Supabase storage tablosuna göre)
+      const possiblePaths = [
+        'carousel/slide-{i}.png'
+      ];
+      
+      // 3 adet carousel görseli yükle
+      for (let i = 0; i < 3; i++) {
+        let found = false;
+        
+        for (const pathTemplate of possiblePaths) {
+          const path = pathTemplate.replace('{i}', i);
+          try {
+            const carouselUrl = window.backendManager.getImageUrl('site-images', path);
+            console.log(`🔍 Carousel slide-${i} path deneniyor: ${path} -> ${carouselUrl}`);
+            
+            const response = await fetch(carouselUrl, { method: 'HEAD' });
+            if (response.ok) {
+              images.push(carouselUrl);
+              console.log(`✅ Carousel slide-${i} backend storage'dan yüklendi: ${path}`);
+              found = true;
+              break;
+            } else {
+              console.log(`⚠️ Carousel slide-${i} bulunamadı: ${path} (${response.status})`);
+            }
+          } catch (error) {
+            console.log(`❌ Carousel slide-${i} path hatası: ${path}`, error.message);
+          }
+        }
+        
+        if (!found) {
+          console.warn(`⚠️ Carousel slide-${i} hiçbir path'te bulunamadı`);
+        }
+      }
+      
+      if (images.length > 0) {
+        carousel.setAttribute('data-images', JSON.stringify(images));
+        console.log(`✅ ${images.length} adet carousel görseli yüklendi`);
+        
+        // Carousel'i yeniden başlat
+        if (window.initializeCarousel) {
+          window.initializeCarousel();
+        }
+      } else {
+        console.warn('⚠️ Hiç carousel görseli yüklenemedi');
+      }
+    } catch (error) {
+      console.error('❌ Carousel yükleme hatası:', error);
+    }
+  }
+
   // =====================================================
   // POPUP SİSTEMİ FONKSİYONLARI
   // =====================================================
@@ -1093,6 +1274,7 @@
 
   // Debug fonksiyonu - backend görsellerini kontrol et
   window.debugImages = async function() {
+    console.log('aaaaaas');
     console.log('🖼️ Backend Görsel Debug Bilgileri');
     console.log('=====================================');
     
