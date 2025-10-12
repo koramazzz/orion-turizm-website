@@ -1107,12 +1107,19 @@
       return;
     }
 
+    // Preloader durumunu detaylı kontrol et
+    if (window.preloader) {
+      console.log('🔧 Preloader isInitialized:', window.preloader.isInitialized);
+      console.log('🔧 Preloader cachedData keys:', Object.keys(window.preloader.cachedData || {}));
+    }
+
     // 2. Site içeriklerini kontrol et
     console.log('\n2️⃣ SITE İÇERİKLERİ:');
     try {
       const siteContent = await window.preloader.getCachedData('siteContent');
       if (siteContent) {
         console.log('✅ Site içerikleri yüklü');
+        console.log('📊 Site Content Keys:', Object.keys(siteContent));
         
         // Header logo (en üst)
         if (siteContent.headerLogo) {
@@ -1155,6 +1162,28 @@
         }
       } else {
         console.warn('⚠️ Site içerikleri yüklenmemiş');
+        
+        // Supabase'den direkt kontrol et
+        if (window.supabase) {
+          console.log('🔍 Supabase\'den direkt kontrol ediliyor...');
+          try {
+            const { data, error } = await window.supabase
+              .from('site_content')
+              .select('*')
+              .single();
+            
+            if (error) {
+              console.error('❌ Supabase site_content hatası:', error);
+            } else if (data) {
+              console.log('✅ Supabase\'de site_content mevcut:', data);
+              console.log('📊 Supabase Data Keys:', Object.keys(data));
+            } else {
+              console.warn('⚠️ Supabase\'de site_content bulunamadı');
+            }
+          } catch (e) {
+            console.error('❌ Supabase kontrol hatası:', e);
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Site içerikleri alınırken hata:', error);
@@ -1211,6 +1240,9 @@
       const carouselImg = carousel.querySelector('img');
       if (carouselImg) {
         console.log('🎠 Carousel Aktif Görsel:', carouselImg.src);
+        if (carouselImg.src.includes('github.io')) {
+          console.warn('⚠️ Carousel yanlış URL kullanıyor (github.io)');
+        }
       } else {
         console.log('⚠️ Carousel görseli bulunamadı');
       }
@@ -1228,6 +1260,7 @@
         }
       } else {
         console.log('⚠️ Carousel data-images bulunamadı');
+        console.log('🔍 Carousel attributes:', Array.from(carousel.attributes).map(attr => `${attr.name}="${attr.value}"`));
       }
     } else {
       console.log('⚠️ Carousel elementi bulunamadı');
