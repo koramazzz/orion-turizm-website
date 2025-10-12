@@ -1091,4 +1091,179 @@
     }
   };
 
+  // Debug fonksiyonu - backend görsellerini kontrol et
+  window.debugImages = async function() {
+    console.log('🖼️ Backend Görsel Debug Bilgileri');
+    console.log('=====================================');
+    
+    // 1. Backend durumu kontrolü
+    console.log('\n1️⃣ BACKEND DURUMU:');
+    console.log('🔧 Backend Manager:', window.backendManager ? '✅ Mevcut' : '❌ Yok');
+    console.log('🔧 Supabase:', window.supabase ? '✅ Mevcut' : '❌ Yok');
+    console.log('🔧 Preloader:', window.preloader ? '✅ Mevcut' : '❌ Yok');
+    
+    if (!window.backendManager) {
+      console.warn('⚠️ Backend Manager bulunamadı!');
+      return;
+    }
+
+    // 2. Site içeriklerini kontrol et
+    console.log('\n2️⃣ SITE İÇERİKLERİ:');
+    try {
+      const siteContent = await window.preloader.getCachedData('siteContent');
+      if (siteContent) {
+        console.log('✅ Site içerikleri yüklü');
+        
+        // Header logo (en üst)
+        if (siteContent.headerLogo) {
+          console.log('🖼️ Header Logo URL:', siteContent.headerLogo);
+          await testImageLoad(siteContent.headerLogo, 'Header Logo');
+        } else {
+          console.log('⚠️ Header Logo: Tanımlı değil');
+        }
+        
+        // Carousel images (ana sayfa)
+        if (siteContent.carouselImages) {
+          try {
+            const carouselImages = JSON.parse(siteContent.carouselImages);
+            console.log('🎠 Carousel Images:', carouselImages.length, 'adet');
+            for (let i = 0; i < carouselImages.length; i++) {
+              console.log(`   ${i + 1}. ${carouselImages[i]}`);
+              await testImageLoad(carouselImages[i], `Carousel Image ${i + 1}`);
+            }
+          } catch (e) {
+            console.error('❌ Carousel görselleri parse edilemedi:', e);
+          }
+        } else {
+          console.log('⚠️ Carousel Images: Tanımlı değil');
+        }
+        
+        // About image (hakkımızda sayfası)
+        if (siteContent.aboutImage) {
+          console.log('🖼️ About Image URL:', siteContent.aboutImage);
+          await testImageLoad(siteContent.aboutImage, 'About Image');
+        } else {
+          console.log('⚠️ About Image: Tanımlı değil');
+        }
+        
+        // Content logo (iletişim bölümü)
+        if (siteContent.contentLogo) {
+          console.log('🖼️ Content Logo URL:', siteContent.contentLogo);
+          await testImageLoad(siteContent.contentLogo, 'Content Logo');
+        } else {
+          console.log('⚠️ Content Logo: Tanımlı değil');
+        }
+      } else {
+        console.warn('⚠️ Site içerikleri yüklenmemiş');
+      }
+    } catch (error) {
+      console.error('❌ Site içerikleri alınırken hata:', error);
+    }
+
+    // 3. Taşımacılık görsellerini kontrol et
+    console.log('\n3️⃣ TAŞIMACILIK GÖRSELLERİ:');
+    try {
+      const studentServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/studentService.png');
+      console.log('🎓 Öğrenci Servisi URL:', studentServiceUrl);
+      await testImageLoad(studentServiceUrl, 'Öğrenci Servisi');
+      
+      const staffServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/staffService.png');
+      console.log('👔 Personel Servisi URL:', staffServiceUrl);
+      await testImageLoad(staffServiceUrl, 'Personel Servisi');
+    } catch (error) {
+      console.error('❌ Taşımacılık görselleri kontrol edilirken hata:', error);
+    }
+
+    // 4. DOM'daki görselleri kontrol et
+    console.log('\n4️⃣ DOM GÖRSELLERİ:');
+    checkDOMImages();
+  };
+
+  // Görsel yükleme testi
+  async function testImageLoad(url, name) {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      if (response.ok) {
+        console.log(`✅ ${name}: Yüklendi (${response.status})`);
+        return true;
+      } else {
+        console.warn(`⚠️ ${name}: Yüklenemedi (${response.status})`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`❌ ${name}: Hata -`, error.message);
+      return false;
+    }
+  }
+
+  // DOM'daki görselleri kontrol et
+  function checkDOMImages() {
+    // 1. Header logoları (en üst)
+    const headerImgs = document.querySelectorAll('.brand img');
+    console.log('🏠 Header Logoları:', headerImgs.length, 'adet');
+    headerImgs.forEach((img, index) => {
+      console.log(`   ${index + 1}. ${img.src} - ${img.hidden ? '❌ Gizli' : '✅ Görünür'}`);
+    });
+
+    // 2. Carousel görselleri (ana sayfa)
+    const carousel = document.querySelector('.carousel');
+    if (carousel) {
+      const carouselImg = carousel.querySelector('img');
+      if (carouselImg) {
+        console.log('🎠 Carousel Aktif Görsel:', carouselImg.src);
+      } else {
+        console.log('⚠️ Carousel görseli bulunamadı');
+      }
+      
+      const dataImages = carousel.getAttribute('data-images');
+      if (dataImages) {
+        try {
+          const images = JSON.parse(dataImages);
+          console.log('🎠 Carousel Data Images:', images.length, 'adet');
+          images.forEach((img, index) => {
+            console.log(`   ${index + 1}. ${img}`);
+          });
+        } catch (e) {
+          console.warn('⚠️ Carousel data-images parse edilemedi');
+        }
+      } else {
+        console.log('⚠️ Carousel data-images bulunamadı');
+      }
+    } else {
+      console.log('⚠️ Carousel elementi bulunamadı');
+    }
+
+    // 3. About visual (hakkımızda sayfası)
+    const aboutVisuals = document.querySelectorAll('.about-visual');
+    console.log('ℹ️ About Visuals:', aboutVisuals.length, 'adet');
+    aboutVisuals.forEach((visual, index) => {
+      const bg = getComputedStyle(visual).getPropertyValue('--bg');
+      console.log(`   ${index + 1}. Background: ${bg || 'Tanımlı değil'}`);
+    });
+
+    // 4. Taşımacılık background'ları
+    const studentBg = document.querySelector('[data-student-service-bg]');
+    if (studentBg) {
+      const bg = getComputedStyle(studentBg).getPropertyValue('--bg');
+      console.log('🎓 Öğrenci Servisi Background:', bg || 'Tanımlı değil');
+    } else {
+      console.log('⚠️ Öğrenci Servisi background elementi bulunamadı');
+    }
+
+    const staffBg = document.querySelector('[data-staff-service-bg]');
+    if (staffBg) {
+      const bg = getComputedStyle(staffBg).getPropertyValue('--bg');
+      console.log('👔 Personel Servisi Background:', bg || 'Tanımlı değil');
+    } else {
+      console.log('⚠️ Personel Servisi background elementi bulunamadı');
+    }
+
+    // 5. Content logoları (iletişim bölümü - en alt)
+    const contentImgs = document.querySelectorAll('.contact-logo img');
+    console.log('📞 Content Logoları:', contentImgs.length, 'adet');
+    contentImgs.forEach((img, index) => {
+      console.log(`   ${index + 1}. ${img.src} - ${img.hidden ? '❌ Gizli' : '✅ Görünür'}`);
+    });
+  }
+
 })();
