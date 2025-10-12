@@ -114,7 +114,7 @@
         } else {
           console.warn('⚠️ Carousel bulunamadı veya görseller boş');
         }
-      } catch (e) {
+      } catch (e) { 
         console.error('❌ Carousel görselleri parse edilemedi:', e);
       }
     }
@@ -953,11 +953,6 @@
       // Popup ayarlarını kaydet
       window.popupShowOnce = data.show_once;
 
-      // Popup gösterildi, hemen kayıt oluştur
-      if (data.show_once) {
-        await recordPopupView();
-      }
-
     } catch (error) {
       console.error('Popup yüklenirken hata:', error);
     }
@@ -1015,13 +1010,16 @@
   }
 
   // Popup'ı kapat
-  function closeSitePopup() {
+  async function closeSitePopup() {
     const popup = document.getElementById('sitePopup');
     if (popup) {
       popup.style.animation = 'popupFadeOut 0.3s ease-out';
-      setTimeout(() => {
+      setTimeout(async () => {
         popup.remove();
         window.popupShown = false;
+        
+        // Popup kapatıldığında görüntüleme kaydını oluştur
+        await recordPopupView();
       }, 300);
     }
   }
