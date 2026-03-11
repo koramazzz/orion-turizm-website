@@ -4,8 +4,8 @@
   window.__SUPABASE_BOOTSTRAPPED__ = true;
 
   // Supabase proje bilgilerinizi buraya girin (window üzerinden tanımla)
-  var SUPABASE_URL = window.SUPABASE_URL || 'https://bfwdvvgtfbxbcdkdpcgw.supabase.co';
-  var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmd2R2dmd0ZmJ4YmNka2RwY2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzMTE0MzYsImV4cCI6MjA3NDg4NzQzNn0.SzCea6O37MjcCmmYSB6mKAgv_IlDO2SEzwTjL3e3Qn4';
+  var SUPABASE_URL = window.SUPABASE_URL || 'https://fxmmnddcchfhusbhxebp.supabase.co';
+  var SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4bW1uZGRjY2hmaHVzYmh4ZWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzU1MzgsImV4cCI6MjA4ODY1MTUzOH0.YYl8jCETqtY6D5Mgiw8STC8Vo9rb62YDlGbrot6Qzfc';
 
   // Global olarak erişilebilir yap (mail gönderimi için)
   window.SUPABASE_URL = SUPABASE_URL;

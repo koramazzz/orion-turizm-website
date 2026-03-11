@@ -2224,11 +2224,15 @@ class ContentUpdater {
             let currentIndex = 0;
             
             const renderCarousel = () => {
-              // Smooth fade transition - daha hızlı ve temiz
+              const nextUrl = carouselUrls[currentIndex];
               carouselImg.style.opacity = '0';
               
               setTimeout(() => {
-                carouselImg.src = carouselUrls[currentIndex];
+                // Görsel yüklendikten sonra fade in (beyaz flash önlenir)
+                const doFadeIn = () => { carouselImg.style.opacity = '1'; };
+                carouselImg.onload = doFadeIn;
+                carouselImg.onerror = doFadeIn;
+                carouselImg.src = nextUrl;
                 
                 // Dots'ları güncelle
                 dots.innerHTML = '';
@@ -2241,16 +2245,10 @@ class ContentUpdater {
                   });
                   dots.appendChild(btn);
                 });
-                
-                // Fade in - daha hızlı
-                setTimeout(() => {
-                  carouselImg.style.opacity = '1';
-                }, 10);
-              }, 150); // Daha kısa fade out duration
+              }, 80);
             };
             
-            // CSS transition ekle - daha hızlı ve temiz
-            carouselImg.style.transition = 'opacity 0.15s ease-in-out';
+            carouselImg.style.transition = 'opacity 0.25s ease-in-out';
             
             renderCarousel();
             

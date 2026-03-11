@@ -1017,15 +1017,28 @@
       
       console.log('🎠 Carousel başlatılıyor:', images.length, 'görsel');
       
+      // Görselleri önceden yükle (beyaz flash önleme)
+      images.forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+      
       let currentIndex = 0;
       
       const renderCarousel = () => {
-        // Smooth fade transition
+        const nextUrl = images[currentIndex];
+        
+        // Fade out
         carouselImg.style.opacity = '0';
         
         setTimeout(() => {
-          carouselImg.src = images[currentIndex];
-          console.log(`🎠 Carousel görsel değiştirildi: ${currentIndex} -> ${images[currentIndex]}`);
+          // Yeni görseli yükle - sadece yüklendikten sonra fade in (beyaz flash önlenir)
+          const doFadeIn = () => {
+            carouselImg.style.opacity = '1';
+          };
+          carouselImg.onload = doFadeIn;
+          carouselImg.onerror = doFadeIn;
+          carouselImg.src = nextUrl;
           
           // Dots'ları güncelle
           dots.innerHTML = '';
@@ -1038,16 +1051,11 @@
             });
             dots.appendChild(btn);
           });
-          
-          // Fade in
-          setTimeout(() => {
-            carouselImg.style.opacity = '1';
-          }, 10);
-        }, 150);
+        }, 80);
       };
       
       // CSS transition ekle
-      carouselImg.style.transition = 'opacity 0.15s ease-in-out';
+      carouselImg.style.transition = 'opacity 0.25s ease-in-out';
       
       // İlk görseli göster
       renderCarousel();
