@@ -96,30 +96,21 @@
     console.log('🔄 Site içerikleri sayfaya uygulanıyor...');
     
     // Carousel görsellerini güncelle
+    const carousel = document.querySelector('.carousel');
+    let carouselSet = false;
     if (content.carouselImages) {
-      console.log('🖼️ Carousel görselleri bulundu:', content.carouselImages);
       try {
         const images = JSON.parse(content.carouselImages);
-        console.log('📸 Parse edilen görseller:', images);
-        
-        const carousel = document.querySelector('.carousel');
         if (carousel && images && images.length > 0) {
-          console.log('✅ Carousel bulundu, görseller güncelleniyor...');
           carousel.setAttribute('data-images', JSON.stringify(images));
-          // Carousel'i yeniden başlat
-          console.log('🔄 Carousel yeniden başlatılıyor...');
           initializeCarousel();
-        } else {
-          console.warn('⚠️ Carousel bulunamadı veya görseller boş');
+          carouselSet = true;
         }
       } catch (e) { 
-        console.error('❌ Carousel görselleri parse edilemedi:', e);
+        console.warn('Carousel görselleri parse edilemedi:', e);
       }
-    } else {
-      // Carousel görselleri yoksa backend storage'dan yükle
-      console.log('🔄 Carousel görselleri backend storage\'dan yükleniyor...');
-      loadCarouselFromStorage();
     }
+    if (carousel && !carouselSet) loadCarouselFromStorage();
 
     // Logo güncellemeleri
     // Üst menü logosu (header)
@@ -591,30 +582,48 @@
           }
         }
         
-        // Admin'e mail gönder (Edge Function)
+        // Admin'e mail gönder (Web3Forms)
         try {
-          const supabaseUrl = window.SUPABASE_URL || '';
-          if (supabaseUrl) {
-            const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-form-email`, {
+          // ─────────────────────────────────────────────────
+          // Web3Forms erişim anahtarı:
+          //   1. https://web3forms.com adresine git
+          //   2. koramazomerfaruk@gmail.com adresini gir
+          //   3. Gelen e-postadaki anahtarı buraya yapıştır
+          // ─────────────────────────────────────────────────
+          const WEB3FORMS_KEY = 'fcb83578-e1c5-42e0-ad20-8cd799189176';
+
+          if (WEB3FORMS_KEY && WEB3FORMS_KEY !== 'BURAYA_WEB3FORMS_ANAHTARINI_YAZ') {
+            const formTitles = {
+              contactForm:      '🔔 Orion Turizm — Yeni İletişim Formu',
+              toursForm:        '🎫 Orion Turizm — Yeni Tur Rezervasyon Talebi',
+              customRouteForm:  '🗺️ Orion Turizm — Yeni Özel Rota Talebi',
+            };
+            const subject = formTitles[formType] || '📝 Orion Turizm — Yeni Form Gönderimi';
+
+            // Form alanlarını okunabilir satırlara çevir
+            const bodyLines = Object.entries(data)
+              .filter(([, v]) => v)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join('\n');
+
+            const emailResponse = await fetch('https://api.web3forms.com/submit', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                formType: formType,
-                data: data,
-                submittedAt: new Date().toLocaleString('tr-TR')
+                access_key:  WEB3FORMS_KEY,
+                subject:     subject,
+                from_name:   'Orion Turizm Website',
+                message:     `${bodyLines}\n\nGönderim: ${new Date().toLocaleString('tr-TR')}`,
+                ...data
               })
             });
-            
+
             const emailResult = await emailResponse.json();
-            
-            if (emailResponse.ok) {
-            } else {
-              console.error('Mail gönderilemedi:', emailResponse.status, emailResult);
+            if (!emailResult.success) {
+              console.error('Mail gönderilemedi:', emailResult);
             }
           } else {
-            console.warn('SUPABASE_URL tanımlı değil, mail gönderilemedi');
+            console.warn('Web3Forms anahtarı ayarlanmamış — mail gönderilmedi.');
           }
         } catch (emailError) {
           console.error('Mail gönderim hatası:', emailError);
@@ -760,7 +769,8 @@
       itin.innerHTML = ''; 
       tour.itinerary.forEach(function(item){ 
         var li=document.createElement('li'); 
-        li.textContent=item; 
+        var dayContent = (item.replace(/^Gün \d+:\s*/i, '').trim()) || item;
+        li.textContent = 'Gün: ' + dayContent; 
         li.style.padding = '12px 0';
         li.style.borderBottom = '1px solid #f0f0f0';
         li.style.fontSize = '1.1rem';
@@ -946,33 +956,22 @@
         'carousel/slide-{i}.png'
       ];
       
-      // 3 adet carousel görseli yükle
-      for (let i = 0; i < 3; i++) {
+      // Carousel görsellerini yükle (sınırsız - slide-0, slide-1, ... 404 gelene kadar)
+      for (let i = 0; i < 50; i++) {
         let found = false;
-        
         for (const pathTemplate of possiblePaths) {
           const path = pathTemplate.replace('{i}', i);
           try {
             const carouselUrl = window.backendManager.getImageUrl('site-images', path);
-            console.log(`🔍 Carousel slide-${i} path deneniyor: ${path} -> ${carouselUrl}`);
-            
             const response = await fetch(carouselUrl, { method: 'HEAD' });
             if (response.ok) {
               images.push(carouselUrl);
-              console.log(`✅ Carousel slide-${i} backend storage'dan yüklendi: ${path}`);
               found = true;
               break;
-            } else {
-              console.log(`⚠️ Carousel slide-${i} bulunamadı: ${path} (${response.status})`);
             }
-          } catch (error) {
-            console.log(`❌ Carousel slide-${i} path hatası: ${path}`, error.message);
-          }
+          } catch (error) {}
         }
-        
-        if (!found) {
-          console.warn(`⚠️ Carousel slide-${i} hiçbir path'te bulunamadı`);
-        }
+        if (!found) break;
       }
       
       if (images.length > 0) {
@@ -1060,8 +1059,10 @@
       // İlk görseli göster
       renderCarousel();
       
+      // Önceki interval varsa temizle (çoklu çağrıda sızıntı önleme)
+      if (window.__carouselInterval) clearInterval(window.__carouselInterval);
       // Auto-rotate (4 saniyede bir)
-      setInterval(() => {
+      window.__carouselInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % images.length;
         renderCarousel();
       }, 4000);
@@ -1174,14 +1175,20 @@
         return;
       }
 
-      // Popup ayarlarını al
+      // Popup ayarlarını al (en son güncellenen kaydı al)
       const { data, error } = await window.supabase
         .from('popup_settings')
         .select('*')
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Popup ayarları yüklenirken hata:', error);
+        return;
+      }
+
+      if (!data) {
         return;
       }
 

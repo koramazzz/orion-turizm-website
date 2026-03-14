@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
@@ -51,14 +51,15 @@
             </div>
           </div>
 
-          <!-- Tur Fotoğrafları -->
+          <!-- Tur Fotoğrafları (4 görünür, fazlası kaydırmalı) -->
           <div class="gallery-section" style="margin-top:20px;">
             <h3 style="margin-bottom: 15px; color: var(--brand);">📸 Tur Fotoğrafları</h3>
-            <div class="gallery" id="tourGallery" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
-              <img alt="foto1" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
-              <img alt="foto2" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
-              <img alt="foto3" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
-              <img alt="foto4" style="width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;" onclick="openImageModal(this.src)" />
+            <div class="partners-container">
+              <div class="partners-scroll tour-gallery-scroll" id="tourGallery"></div>
+              <div class="scroll-buttons">
+                <button class="scroll-btn" id="tourGalleryScrollLeft" aria-label="Sola kaydır">‹</button>
+                <button class="scroll-btn" id="tourGalleryScrollRight" aria-label="Sağa kaydır">›</button>
+              </div>
             </div>
           </div>
 
@@ -83,12 +84,12 @@
 
           <!-- Tur Programı -->
           <div class="itinerary" id="itinerary" style="margin-top:40px;">
-            <h2 style="color: var(--brand); margin-bottom: 20px;">🗓️ Detaylı Tur Programı</h2>
+            <h2 style="color: var(--brand); margin-bottom: 20px;">🗓️ Tur Programı</h2>
             <div class="itinerary-content" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,.08);">
               <ol id="itineraryList" style="padding-left: 20px; margin: 0;">
-                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün 1: Varış ve şehir turu</li>
-                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün 2: Bölge gezileri ve serbest zaman</li>
-                <li style="padding: 12px 0; font-size: 1.1rem; line-height: 1.6;">Gün 3: Dönüş</li>
+                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün: Varış ve şehir turu</li>
+                <li style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 1.1rem; line-height: 1.6;">Gün: Bölge gezileri ve serbest zaman</li>
+                <li style="padding: 12px 0; font-size: 1.1rem; line-height: 1.6;">Gün: Dönüş</li>
               </ol>
             </div>
           </div>
@@ -115,7 +116,7 @@
     </footer>
 
     <!-- Developer Signature -->
-    <div class="dev-signature">koramaz</div>
+    <a class="dev-signature" href="https://mail.google.com/mail/?view=cm&to=koramazomerfaruk@gmail.com" target="_blank" rel="noopener" title="koramazomerfaruk@gmail.com">koramaz</a>
 
     <!-- Seçim Modalları -->
     <div class="modal" id="routesModal" aria-hidden="true">
@@ -158,10 +159,6 @@
       </div>
     </div>
 
-    <!-- Supabase CDN -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <script src="assets/js/supabase-config.js"></script>
     </div> <!-- End page-content -->
 
     <!-- Supabase CDN -->

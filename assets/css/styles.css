@@ -757,6 +757,17 @@ a{color:inherit;text-decoration:none}
 .partner-item{flex:0 0 200px;width:200px}
 .partner-item .logo-pill{width:200px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:60px;padding:16px 20px}
 
+/* Tur galerisi - tam 4 görsel sığar, fazlası kaydırmalı */
+.tour-gallery-scroll{display:flex;gap:12px}
+.tour-gallery-scroll img{flex:0 0 calc(25% - 9px);width:calc(25% - 9px);height:220px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s}
+.tour-gallery-scroll img:hover{transform:scale(1.03)}
+@media (max-width: 768px){
+  .tour-gallery-scroll img{flex:0 0 calc(50% - 6px);width:calc(50% - 6px);height:170px}
+}
+@media (max-width: 480px){
+  .tour-gallery-scroll img{flex:0 0 calc(100% - 0px);width:100%;height:200px}
+}
+
 /* Responsive breakpoints */
 @media (min-width: 1200px) {
   .logo-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
@@ -1764,25 +1775,151 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
   }
 }
 
+/* =====================================================
+   Kurum Detay Sayfası — Buton Izgarası
+   ===================================================== */
+.org-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.org-buttons .btn {
+  min-width: 160px;
+  flex: 1 1 160px;
+  max-width: 260px;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .org-buttons .btn {
+    flex: 1 1 calc(50% - 6px);
+    max-width: 100%;
+  }
+}
+
+/* =====================================================
+   Kurum Detay Sayfası — Yetkili Kişiler
+   ===================================================== */
+.org-contacts-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.org-contacts-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+
+.org-contacts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.org-contact-display-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  padding: 20px 16px 16px;
+  width: 180px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  transition: box-shadow .2s, transform .2s;
+}
+
+.org-contact-display-card:hover {
+  box-shadow: 0 6px 24px rgba(122,28,134,.12);
+  transform: translateY(-2px);
+}
+
+.contact-display-photo {
+  width: 90px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 3px solid var(--brand-50, #f5f0ff);
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  flex-shrink: 0;
+}
+
+.contact-display-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.contact-display-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.contact-display-title {
+  font-size: 0.78rem;
+  color: var(--brand);
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
+.contact-display-item {
+  font-size: 0.78rem;
+  color: var(--muted, #6b7280);
+  text-decoration: none;
+  text-align: center;
+  display: block;
+  transition: color .15s;
+}
+
+.contact-display-item:hover {
+  color: var(--brand);
+}
+
+@media (max-width: 480px) {
+  .org-contact-display-card {
+    width: calc(50% - 10px);
+    min-width: 140px;
+  }
+}
+
 /* Developer Signature */
 .dev-signature {
   position: fixed;
   bottom: 0;
   right: 0;
-  background: rgba(150, 150, 150, 0.3);
-  color: rgba(100, 100, 100, 0.6);
-  padding: 2px 6px;
-  border-radius: 4px 0 0 0;
-  font-size: 9px;
-  font-weight: 400;
+  background: rgba(150, 150, 150, 0.25);
+  color: rgba(80, 80, 80, 0.55);
+  padding: 4px 10px;
+  border-radius: 8px 0 0 0;
+  font-size: 12px;
+  font-weight: 500;
   font-family: 'Poppins', sans-serif;
   z-index: 1000;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
+  opacity: 0.6;
+  transition: opacity 0.25s ease, background 0.25s ease, color 0.25s ease;
+  text-decoration: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  display: inline-block;
 }
 
 .dev-signature:hover {
-  opacity: 0.8;
-  background: rgba(150, 150, 150, 0.5);
-  color: rgba(80, 80, 80, 0.8);
+  opacity: 1;
+  background: rgba(122, 28, 134, 0.12);
+  color: var(--brand, #7a1c86);
 }

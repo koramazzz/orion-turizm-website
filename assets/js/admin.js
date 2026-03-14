@@ -47,6 +47,8 @@ class AdminPanel {
     this.loadSavedContent();
     // Session kontrolü yap
     this.checkAuth();
+    // Popup ayarlarını yükle
+    loadPopupSettings();
   }
 
 
@@ -136,12 +138,15 @@ class AdminPanel {
       });
     }
 
-    // Carousel görselleri (admin.html only)
-    document.querySelectorAll('.carousel-upload').forEach(input => {
-      input.addEventListener('change', (e) => {
-        this.handleCarouselUpload(e);
+    // Carousel görselleri - event delegation (dinamik eklenen öğeler için)
+    const carouselContainer = document.getElementById('carouselImages');
+    if (carouselContainer) {
+      carouselContainer.addEventListener('change', (e) => {
+        if (e.target.classList.contains('carousel-upload')) {
+          this.handleCarouselUpload(e);
+        }
       });
-    });
+    }
 
     // Hakkımızda görseli (admin.html only)
     const aboutImageUpload = document.getElementById('aboutImageUpload');
@@ -382,13 +387,12 @@ class AdminPanel {
         
         // Admin paneldeki önizlemeyi güncelle
         const carouselItem = document.querySelector(`[data-index="${index}"] img`);
-        carouselItem.src = imageData;
+        if (carouselItem) carouselItem.src = imageData;
         
         // Backend'e yükle
         try {
           const publicUrl = await window.backendManager.uploadCarouselImage(imageData, parseInt(index));
-          // Cache-busting ile görseli güncelle
-          carouselItem.src = `${publicUrl}?v=${Date.now()}`;
+          if (carouselItem) carouselItem.src = `${publicUrl}?v=${Date.now()}`;
           this.showSuccessMessage();
         } catch (error) {
           console.error(`Carousel görsel yükleme hatası (${index}):`, error);
@@ -397,6 +401,67 @@ class AdminPanel {
       };
       reader.readAsDataURL(file);
     }
+  }
+
+  createCarouselImageItem(index, imgSrc = '') {
+    const div = document.createElement('div');
+    div.className = 'carousel-image-item';
+    div.setAttribute('data-index', index);
+    div.innerHTML = `
+      <img src="${imgSrc || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2280%22%3E%3Crect fill=%22%23eee%22 width=%22120%22 height=%2280%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23999%22 font-size=%2212%22 text-anchor=%22middle%22 dy=%22.3em%22%3E${index + 1}. Görsel%3C/text%3E%3C/svg%3E'}" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;" />
+      <div class="file-upload" style="margin-top: 8px;">
+        <input type="file" class="carousel-upload" data-index="${index}" accept="image/*" />
+        📁 Değiştir
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 4px; font-size: 11px;" onclick="window.adminPanel && window.adminPanel.removeCarouselImage(this)">🗑️ Sil</button>
+    `;
+    return div;
+  }
+
+  addCarouselImage() {
+    const container = document.getElementById('carouselImages');
+    if (!container) return;
+    const items = container.querySelectorAll('.carousel-image-item');
+    const indices = Array.from(items).map(el => parseInt(el.getAttribute('data-index')) || 0);
+    const nextIndex = indices.length > 0 ? Math.max(...indices) + 1 : 0;
+    container.appendChild(this.createCarouselImageItem(nextIndex));
+  }
+
+  removeCarouselImage(button) {
+    const container = document.getElementById('carouselImages');
+    if (!container) return;
+    const item = button.closest('.carousel-image-item');
+    if (!item || container.children.length <= 1) return;
+
+    // Storage'dan da sil
+    const img = item.querySelector('img');
+    if (img && img.src && !img.src.startsWith('data:') && window.backendManager) {
+      const src = img.src.split('?')[0];
+      const match = src.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+      if (match) window.backendManager.deleteImage(match[1], match[2]).catch(() => {});
+    }
+
+    item.remove();
+
+    // site_content'teki carouselImages listesini hemen güncelle (kaydet butonunu bekleme)
+    if (window.backendManager) {
+      const urls = this.getCarouselImagesData();
+      window.backendManager.saveSiteContent({ carouselImages: JSON.stringify(urls) }).catch(() => {});
+    }
+  }
+
+  getCarouselImagesData() {
+    const container = document.getElementById('carouselImages');
+    if (!container) return [];
+    const urls = [];
+    container.querySelectorAll('.carousel-image-item img').forEach(img => {
+      const src = (img.src || '').trim();
+      if (!src || src.startsWith('data:') || src.startsWith('blob:') || src.includes('unsplash.com')) return;
+      // Query parametrelerini kaldır (cache-busting vb.) - temiz URL kaydet
+      const baseUrl = src.split('?')[0];
+      if (baseUrl) urls.push(baseUrl);
+    });
+    return urls;
   }
 
   async handleAboutImageUpload(event) {
@@ -457,6 +522,11 @@ class AdminPanel {
 
   async saveChanges() {
     try {
+      // Kurum açıklamalarını kaydetmeden önce kurum listesi ile eşitle
+      if (typeof window.syncOrgDescriptions === 'function') {
+        window.syncOrgDescriptions({ silent: true });
+      }
+
       // Form alanlarını kontrol et
       const siteTitle = document.getElementById('siteTitle');
       
@@ -520,50 +590,57 @@ class AdminPanel {
         emailAddress: getFieldValue('emailAddress'),
         address: getFieldValue('address'),
         instagramLink: getFieldValue('instagramLink'),
-        studentServiceTitle: getFieldValue('studentServiceTitle'),
-        studentServiceDesc: getFieldValue('studentServiceDesc'),
-        staffServiceTitle: getFieldValue('staffServiceTitle'),
-        staffServiceDesc: getFieldValue('staffServiceDesc'),
+        transportServicesList: JSON.stringify(this.getTransportServicesData()),
         serviceOrganizations: serviceOrgsData,
         authorizedInstitutions: institutionsData,
         partnerList: partnersData,
         toursList: toursData,
         tourDetails: this.getTourDetailsData(),
-        formFields: formFieldsData
+        formFields: formFieldsData,
+        carouselImages: JSON.stringify(this.getCarouselImagesData())
       };
 
       
       // Ana siteye değişiklikleri uygula
       this.applyChangesToSite();
-      
-      this.showSuccessMessage();
-      
+      let saveError = null;
+
       // Backend'e kaydet (eğer varsa)
       if (window.backendManager) {
         try {
           await window.backendManager.saveSiteContent(contentData);
           
-          // Taşımacılık kurumlarını da kaydet
-          await this.syncTransportOrgs();
-
-          // Kurum açıklamalarını da kaydet
-          try {
-            const descriptions = this.getOrgDescriptionsData();
-            if (descriptions && Object.keys(descriptions).length > 0) {
-              await window.backendManager.saveOrgDescriptions(descriptions);
-            } else {
-            }
-          } catch (descErr) {
-            console.warn('Kurum açıklamaları kaydedilemedi:', descErr);
+          // Taşımacılık kurumlarını ve kurum açıklamalarını birlikte kaydet
+          // (açıklamalar artık syncTransportOrgs içinde description alanına gömülüyor)
+          if (typeof saveCurrentOrgDescription === 'function') {
+            saveCurrentOrgDescription();
           }
+          await this.syncTransportOrgs();
           
           // Form alanlarını da kaydet
           await this.syncFormFields();
           
         } catch (error) {
           console.warn('Backend kaydetme hatası:', error);
+          saveError = error;
         }
       }
+
+      // Popup ayarlarını da ana kaydetme akışına dahil et (backendManager olmasa da)
+      if (typeof window.savePopupSettings === 'function') {
+        try {
+          await window.savePopupSettings({ silent: true, throwOnError: true });
+        } catch (popupError) {
+          console.warn('Popup kaydetme hatası:', popupError);
+          saveError = saveError || popupError;
+        }
+      }
+
+      if (saveError) {
+        throw saveError;
+      }
+
+      this.showSuccessMessage();
     } catch (error) {
       console.error('Kaydetme hatası:', error);
       alert('Kaydetme sırasında bir hata oluştu: ' + error.message);
@@ -674,6 +751,24 @@ class AdminPanel {
             this.loadServiceOrgs(backendContent.serviceOrganizations);
           }
 
+          // Taşımacılık hizmetlerini backend'den yükle
+          if (backendContent.transportServicesList) {
+            try {
+              const services = JSON.parse(backendContent.transportServicesList);
+              if (Array.isArray(services) && services.length > 0) {
+                this.loadTransportServices(services);
+              } else {
+                if (typeof window._addDefaultTransportServicesIfEmpty === 'function') window._addDefaultTransportServicesIfEmpty();
+              }
+            } catch(e) {
+              console.warn('Taşımacılık hizmetleri parse edilemedi:', e);
+              if (typeof window._addDefaultTransportServicesIfEmpty === 'function') window._addDefaultTransportServicesIfEmpty();
+            }
+          } else {
+            // Backend'de kayıt yoksa varsayılanları ekle
+            if (typeof window._addDefaultTransportServicesIfEmpty === 'function') window._addDefaultTransportServicesIfEmpty();
+          }
+
           // Tur verilerini backend'den yükle
           try {
             const tours = await window.backendManager.getTours();
@@ -755,23 +850,44 @@ class AdminPanel {
     const container = document.getElementById('transportOrgsList');
     if(!container) return [];
     
-    const items = Array.from(container.querySelectorAll('.list-item'));
+    const items = Array.from(container.querySelectorAll(':scope > .list-item'));
     const result = items.map(it => {
       const name = it.querySelector('.org-name')?.value.trim() || '';
       const type = it.querySelector('.org-type')?.value || 'school';
-      const contractUrl = it.querySelector('.org-contract')?.value.trim() || '';
-      const vitaWebUrl = it.querySelector('.org-vita-web')?.value.trim() || '';
-      const vitaAppUrl = it.querySelector('.org-vita-app')?.value.trim() || '';
-      const paymentUrl = it.querySelector('.org-payment')?.value.trim() || '';
+      
+      // Dinamik butonları oku
+      const buttons = [];
+      it.querySelectorAll('.org-btn-row').forEach(row => {
+        const label = row.querySelector('.org-btn-label')?.value.trim() || '';
+        const url   = row.querySelector('.org-btn-url')?.value.trim() || '';
+        const style = row.querySelector('.org-btn-style')?.value || 'outline';
+        if (label || url) buttons.push({ label, url, style });
+      });
       
       // Logo URL'sini cache-busting parametresiz al
       let logo = it.querySelector('.org-logo-preview')?.src || '';
       if (logo && logo.includes('?v=')) {
-        logo = logo.split('?v=')[0]; // Cache-busting parametresini kaldır
+        logo = logo.split('?v=')[0];
       }
       
       if(!name) return null;
-      return { name, type, contractUrl, vitaWebUrl, vitaAppUrl, paymentUrl, logo };
+      const text = (window.orgDescriptionsStore?.[name] || '').trim();
+
+      // Yetkili kişileri oku
+      const contacts = [];
+      it.querySelectorAll('.org-contact-card').forEach(card => {
+        const photo = card.querySelector('.contact-photo-preview')?.dataset.url
+                   || card.querySelector('.contact-photo-preview')?.src || '';
+        const cName  = card.querySelector('.contact-name')?.value.trim()  || '';
+        const cTitle = card.querySelector('.contact-title')?.value.trim() || '';
+        const cPhone = card.querySelector('.contact-phone')?.value.trim() || '';
+        const cEmail = card.querySelector('.contact-email')?.value.trim() || '';
+        // Placeholder SVG'yi saklamak istemiyoruz
+        const cleanPhoto = photo.startsWith('data:image/svg') ? '' : photo;
+        if (cName || cPhone) contacts.push({ photo: cleanPhoto, name: cName, title: cTitle, phone: cPhone, email: cEmail });
+      });
+
+      return { name, type, buttons, logo, text, contacts };
     }).filter(Boolean);
     
     return result;
@@ -793,19 +909,41 @@ class AdminPanel {
     }
   }
 
-  getOrgDescriptionsData() {
-    const container = document.getElementById('orgDescriptionsList');
-    if(!container) return {};
-    const items = Array.from(container.querySelectorAll('.list-item'));
-    const result = {};
+  getTransportServicesData() {
+    const items = document.querySelectorAll('#transportServicesList .list-item');
+    const result = [];
     items.forEach(item => {
-      const name = item.querySelector('.org-desc-name')?.value.trim() || '';
-      const description = item.querySelector('.org-desc-text')?.value.trim() || '';
-      if(name && description) {
-        result[name] = description;
-      }
+      const title = item.querySelector('.transport-service-title')?.value.trim() || '';
+      const desc = item.querySelector('.transport-service-desc')?.value.trim() || '';
+      if (title) result.push({ title, desc });
     });
     return result;
+  }
+
+  loadTransportServices(servicesArray) {
+    const container = document.getElementById('transportServicesList');
+    if (!container) return;
+    container.innerHTML = '';
+    if (typeof addTransportService === 'function') {
+      servicesArray.forEach(s => addTransportService({ title: s.title || '', desc: s.desc || '' }));
+    }
+  }
+
+  getOrgDescriptionsData() {
+    // Önce mevcut textarea değerini depoya kaydet
+    if (typeof saveCurrentOrgDescription === 'function') {
+      saveCurrentOrgDescription();
+    }
+    // window.orgDescriptionsStore'dan oku
+    if (window.orgDescriptionsStore && typeof window.orgDescriptionsStore === 'object') {
+      const result = {};
+      Object.keys(window.orgDescriptionsStore).forEach(name => {
+        const desc = (window.orgDescriptionsStore[name] || '').trim();
+        if (name && desc) result[name] = desc;
+      });
+      return result;
+    }
+    return {};
   }
 
   switchCategory(category) {
@@ -980,63 +1118,52 @@ class AdminPanel {
 
     // Backend'den gelen kurumları ekle
     orgsArray.forEach(org => {
+      // Butonları çöz:
+      // 1. {v:2, buttons, text} birleşik format (yeni)
+      // 2. [...] salt buton dizisi (eski format)
+      // 3. Hiçbiri yoksa eski URL sütunlarından oluştur (geriye dönük uyumluluk)
+      let buttons = [];
+      if (org.description) {
+        const trimmed = org.description.trim();
+        if (trimmed.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            buttons = parsed.buttons || [];
+          } catch(e) {}
+        } else if (trimmed.startsWith('[')) {
+          try { buttons = JSON.parse(trimmed); } catch(e) {}
+        }
+      }
+      if (!buttons.length) {
+        const legacy = [
+          { label: '📄 Sözleşme İndir', url: org.contract_url || '', style: 'outline' },
+          { label: '🌐 Vita Web Paneli',  url: org.vita_web_url || '',  style: 'outline' },
+          { label: '📱 Vita Uygulaması',  url: org.vita_app_url || '',  style: 'outline' },
+          { label: '💳 Ödeme Yap',        url: org.payment_url || '',  style: 'primary'  },
+        ];
+        buttons = legacy;
+      }
+
+      // Yetkili kişileri de çöz
+      let contacts = [];
+      if (org.description) {
+        try {
+          const parsed = JSON.parse(org.description.trim());
+          if (parsed && Array.isArray(parsed.contacts)) contacts = parsed.contacts;
+        } catch(e) {}
+      }
+
       const orgData = {
         name: org.name,
         type: org.type,
         logo: org.logo_url,
-        contractUrl: org.contract_url,
-        vitaWebUrl: org.vita_web_url,
-        vitaAppUrl: org.vita_app_url,
-        paymentUrl: org.payment_url
+        buttons,
+        contacts
       };
       
-      // Direkt DOM'a ekle
-      const item = document.createElement('div');
-      item.className = 'list-item';
-      item.style.gridTemplateColumns = '2fr 80px 120px 1.5fr 1fr 1fr 1fr 60px';
-      item.innerHTML = `
-        <input type="text" placeholder="Kurum Adı" class="org-name" value="${orgData.name || ''}" />
-        <select class="org-type">
-          <option value="school" ${orgData.type === 'school' ? 'selected' : ''}>Okul</option>
-          <option value="factory" ${orgData.type === 'factory' ? 'selected' : ''}>Fabrika</option>
-        </select>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="file-upload" style="margin:0;font-size:10px;padding:4px 8px;">
-            <input type="file" class="org-logo-upload" accept="image/*" />
-            📁 Logo
-          </div>
-          <img class="org-logo-preview" style="width:50px;height:30px;object-fit:contain;border:1px solid #ddd;border-radius:4px;${orgData.logo ? 'display:block;' : 'display:none;'}" src="${orgData.logo ? `${orgData.logo}?v=${Date.now()}` : ''}" />
-        </div>
-        <input type="url" placeholder="Sözleşme URL" class="org-contract" value="${orgData.contractUrl || ''}" />
-        <input type="url" placeholder="Vita Web URL" class="org-vita-web" value="${orgData.vitaWebUrl || ''}" />
-        <input type="url" placeholder="Vita App URL" class="org-vita-app" value="${orgData.vitaAppUrl || ''}" />
-        <input type="url" placeholder="Ödeme URL" class="org-payment" value="${orgData.paymentUrl || ''}" />
-        <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="this.parentElement.remove()">🗑️</button>
-      `;
-      container.appendChild(item);
-      
-      // Logo upload event listener ekle
-      const upload = item.querySelector('.org-logo-upload');
-      const preview = item.querySelector('.org-logo-preview');
-      if (upload && preview) {
-        upload.addEventListener('change', function(e) {
-          const file = e.target.files && e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function(ev) {
-            preview.src = ev.target.result;
-            preview.style.display = 'block';
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-      
-      // Silme butonu event listener ekle
-      const removeBtn = item.querySelector('.remove-item');
-      if (removeBtn) {
-        removeBtn.addEventListener('click', function() {
-          item.remove();
-        });
+      // addTransportOrg global fonksiyonu ile DOM'a ekle (logo upload ve butonlar dahil)
+      if (typeof addTransportOrg === 'function') {
+        addTransportOrg(orgData);
       }
     });
   }
@@ -1098,28 +1225,6 @@ class AdminPanel {
     });
   }
 
-  // Kurum açıklamalarını admin panele yükle
-  loadOrgDescriptions(descriptionsObj) {
-    const container = document.getElementById('orgDescriptionsList');
-    if (!container) return;
-
-    // Mevcut açıklamaları temizle
-    container.innerHTML = '';
-
-    // Backend'den gelen açıklamaları ekle
-    Object.keys(descriptionsObj).forEach(orgName => {
-      const descriptionData = {
-        orgName: orgName,
-        description: descriptionsObj[orgName]
-      };
-      
-      // addOrgDescription fonksiyonunu çağır (global fonksiyon)
-      if (typeof addOrgDescription === 'function') {
-        addOrgDescription(descriptionData);
-      }
-    });
-  }
-
   // Turları admin panele yükle
   loadTours(toursArray) {
     const container = document.getElementById('toursList');
@@ -1155,6 +1260,7 @@ class AdminPanel {
             📁 Tur Görseli Yükle
           </div>
           <img class="tour-image-preview" style="width: 80px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; ${tourData.image ? 'display: block;' : 'display: none;'}" src="${tourData.image || ''}" />
+          <button type="button" class="btn btn-ghost btn-sm remove-tour-image" style="font-size: 11px;">🗑️ Görseli Sil</button>
         </div>
         <input type="text" placeholder="Tur Detay Linki (örn: kapadokya)" class="tour-link" value="${tourData.link || ''}" />
         <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTour(this)">🗑️</button>
@@ -1166,6 +1272,10 @@ class AdminPanel {
         setupTourImageUpload(newItem);
       }
     });
+
+    if (typeof window.refreshTourDetailLinkDropdowns === 'function') {
+      window.refreshTourDetailLinkDropdowns();
+    }
   }
 
   // Logoları admin panele yükle
@@ -1208,15 +1318,21 @@ class AdminPanel {
       const itinerary = item.querySelector('.tour-detail-itinerary')?.value.trim() || '';
       
       if (link) {
+        const images = [];
+        item.querySelectorAll('.tour-detail-image-item img.tour-detail-image-preview').forEach(img => {
+          const src = (img.src || '').split('?')[0].trim();
+          if (src && !src.startsWith('data:') && !src.startsWith('blob:')) images.push(src);
+        });
+        const mapImageEl = item.querySelector('.tour-detail-mapimage-preview');
+        const mapImageSrc = ((mapImageEl?.src || '').split('?')[0] || '').trim();
         const tourDetailData = {
           link,
           title: title || 'Tur Detayı',
           subtitle: subtitle || 'Örnek program ve görseller aşağıdadır.',
-          // Görselleri büyük JSON'a gömmeyelim; render sırasında ayrı depodan okunacak
-          mapImage: '',
+          mapImage: (mapImageSrc && !mapImageSrc.startsWith('data:') && !mapImageSrc.startsWith('blob:')) ? mapImageSrc : '',
           mapTitle: mapTitle || 'Tur Güzergâhı',
           mapDescription: mapDesc || 'Detaylı rota ve duraklar',
-          images: [],
+          images,
           description: description || '',
           highlights: highlights ? highlights.split('\n').filter(i => i.trim()) : [],
           itinerary: itinerary ? itinerary.split('\n').filter(i => i.trim()) : []
@@ -1348,19 +1464,41 @@ class AdminPanel {
       } catch (error) {
       }
 
-      // Carousel Görselleri (3 adet)
-      for (let i = 0; i < 3; i++) {
+      // Carousel Görselleri (dinamik - sınırsız)
+      const carouselContainer = document.getElementById('carouselImages');
+      if (carouselContainer) {
+        let carouselUrls = [];
+        // Önce site_content'ten carouselImages varsa onu kullan
         try {
-          const carouselUrl = window.backendManager.getImageUrl('site-images', `carousel/slide-${i}.png`);
-          const carouselImg = document.querySelector(`[data-index="${i}"] img`);
-          if (carouselImg) {
-            const response = await fetch(carouselUrl, { method: 'HEAD' });
-            if (response.ok) {
-              // Cache-busting ile görseli yükle
-              carouselImg.src = `${carouselUrl}?v=${Date.now()}`;
-            }
+          const content = await window.backendManager.getSiteContent();
+          if (content && content.carouselImages) {
+            carouselUrls = JSON.parse(content.carouselImages);
           }
-        } catch (error) {
+        } catch (e) {}
+        // Yoksa storage klasöründen carousel dosyalarını listele
+        if (carouselUrls.length === 0) {
+          try {
+            const files = await window.backendManager.listImages('site-images', 'carousel');
+            const slideFiles = (files || [])
+              .map(file => file?.name || '')
+              .filter(name => /^slide-\d+\.png$/i.test(name))
+              .sort((a, b) => {
+                const aIdx = parseInt((a.match(/\d+/) || ['0'])[0], 10);
+                const bIdx = parseInt((b.match(/\d+/) || ['0'])[0], 10);
+                return aIdx - bIdx;
+              });
+            carouselUrls = slideFiles.map(name => window.backendManager.getImageUrl('site-images', `carousel/${name}`));
+          } catch (e) {
+            console.warn('Carousel dosyaları listelenemedi:', e);
+          }
+        }
+        carouselContainer.innerHTML = '';
+        if (carouselUrls.length === 0) {
+          carouselContainer.appendChild(this.createCarouselImageItem(0));
+        } else {
+          carouselUrls.forEach((url, i) => {
+            carouselContainer.appendChild(this.createCarouselImageItem(i, `${url}?v=${Date.now()}`));
+          });
         }
       }
 
@@ -1437,7 +1575,7 @@ class AdminPanel {
     container.innerHTML = '';
 
     // Backend'den gelen tur detaylarını ekle
-    tourDetailsArray.forEach(detail => {
+    tourDetailsArray.forEach((detail, index) => {
       const newItem = document.createElement('div');
       newItem.className = 'tour-details-item';
       
@@ -1445,99 +1583,89 @@ class AdminPanel {
       const highlightsText = Array.isArray(detail.highlights) ? detail.highlights.join('\n') : (detail.highlights || '');
       const itineraryText = Array.isArray(detail.itinerary) ? detail.itinerary.join('\n') : (detail.itinerary || '');
       
+      const linkOptionsHtml = (typeof window.getTourDetailLinkOptions === 'function')
+        ? window.getTourDetailLinkOptions(detail.link || '')
+        : `<option value="${detail.link || ''}" selected>${detail.link || 'Tur seçin'}</option>`;
+
       newItem.innerHTML = `
-        <div class="tour-details-grid">
-          <div class="edit-group">
-            <label>Tur Linki:</label>
-            <input type="text" placeholder="kapadokya" class="tour-detail-link" value="${detail.link || ''}" />
-          </div>
-          <div class="edit-group">
-            <label>Tur Başlığı:</label>
-            <input type="text" placeholder="Kapadokya Kaşifi" class="tour-detail-title" value="${detail.title || ''}" />
-          </div>
-          <div class="edit-group">
-            <label>Tur Alt Başlığı:</label>
-            <input type="text" placeholder="Uçhisar, Göreme ve vadilerin büyüleyici dünyası" class="tour-detail-subtitle" value="${detail.subtitle || ''}" />
-          </div>
+        <div class="tour-detail-accordion-header">
+          <button type="button" class="btn btn-outline btn-sm tour-detail-toggle">
+            <span class="tour-detail-toggle-label">Tur Detayı</span>
+            <span class="tour-detail-toggle-icon">▾</span>
+          </button>
         </div>
-        <div class="tour-details-grid">
-          <div class="edit-group">
-            <label>Harita Görseli:</label>
-            <div class="file-upload" style="margin-bottom: 8px;">
-              <input type="file" class="tour-detail-mapimage-upload" accept="image/*" />
-              📁 Harita Görseli Yükle
+        <div class="tour-detail-body">
+          <div class="tour-details-grid">
+            <div class="edit-group">
+              <label>Hazır Tur Seçimi:</label>
+              <select class="tour-detail-link">${linkOptionsHtml}</select>
             </div>
-            <img class="tour-detail-mapimage-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-          </div>
-          <div class="edit-group">
-            <label>Harita Başlığı:</label>
-            <input type="text" placeholder="Kapadokya Haritası" class="tour-detail-maptitle" value="${detail.mapTitle || ''}" />
-          </div>
-          <div class="edit-group">
-            <label>Harita Açıklaması:</label>
-            <input type="text" placeholder="Tur güzergahı ve önemli noktalar" class="tour-detail-mapdesc" value="${detail.mapDescription || ''}" />
-          </div>
-        </div>
-        <div class="tour-details-grid tour-details-full-width">
-          <div class="edit-group">
-            <label>Tur Görselleri (4 adet):</label>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-              <div>
-                <div class="file-upload" style="margin-bottom: 8px;">
-                  <input type="file" class="tour-detail-image1-upload" accept="image/*" />
-                  📁 Görsel 1
-                </div>
-                <img class="tour-detail-image1-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-              </div>
-              <div>
-                <div class="file-upload" style="margin-bottom: 8px;">
-                  <input type="file" class="tour-detail-image2-upload" accept="image/*" />
-                  📁 Görsel 2
-                </div>
-                <img class="tour-detail-image2-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-              </div>
-              <div>
-                <div class="file-upload" style="margin-bottom: 8px;">
-                  <input type="file" class="tour-detail-image3-upload" accept="image/*" />
-                  📁 Görsel 3
-                </div>
-                <img class="tour-detail-image3-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-              </div>
-              <div>
-                <div class="file-upload" style="margin-bottom: 8px;">
-                  <input type="file" class="tour-detail-image4-upload" accept="image/*" />
-                  📁 Görsel 4
-                </div>
-                <img class="tour-detail-image4-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-              </div>
+            <div class="edit-group">
+              <label>Tur Başlığı:</label>
+              <input type="text" placeholder="Kapadokya Kaşifi" class="tour-detail-title" value="${detail.title || ''}" />
+            </div>
+            <div class="edit-group">
+              <label>Tur Alt Başlığı:</label>
+              <input type="text" placeholder="Uçhisar, Göreme ve vadilerin büyüleyici dünyası" class="tour-detail-subtitle" value="${detail.subtitle || ''}" />
             </div>
           </div>
-        </div>
-        <div class="tour-details-grid tour-details-full-width">
-          <div class="edit-group">
-            <label>Tur Hakkında (Detaylı Açıklama):</label>
-            <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4">${detail.description || ''}</textarea>
+          <div class="tour-details-grid">
+            <div class="edit-group">
+              <label>Harita Görseli:</label>
+              <div class="file-upload" style="margin-bottom: 8px;">
+                <input type="file" class="tour-detail-mapimage-upload" accept="image/*" />
+                📁 Harita Görseli Yükle
+              </div>
+              <img class="tour-detail-mapimage-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
+            </div>
+            <div class="edit-group">
+              <label>Harita Başlığı:</label>
+              <input type="text" placeholder="Kapadokya Haritası" class="tour-detail-maptitle" value="${detail.mapTitle || ''}" />
+            </div>
+            <div class="edit-group">
+              <label>Harita Açıklaması:</label>
+              <input type="text" placeholder="Tur güzergahı ve önemli noktalar" class="tour-detail-mapdesc" value="${detail.mapDescription || ''}" />
+            </div>
           </div>
-          <div class="edit-group">
-            <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
-            <textarea placeholder="🏛️ Tarihi ve kültürel mekanları ziyaret&#10;🍽️ Yerel lezzetleri tatma fırsatı&#10;📸 Profesyonel fotoğraf çekimi&#10;🎁 Anı eşyaları satın alma imkanı" class="tour-detail-highlights" rows="4">${highlightsText}</textarea>
+          <div class="tour-details-grid tour-details-full-width">
+            <div class="edit-group">
+              <label>Tur Görselleri:</label>
+              <div class="tour-detail-images" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px;"></div>
+              <button type="button" class="btn btn-outline btn-sm" style="margin-top: 8px;" onclick="window.addTourDetailImage && window.addTourDetailImage(this)">➕ Görsel Ekle</button>
+            </div>
           </div>
-        </div>
-        <div class="tour-details-grid tour-details-full-width">
-          <div class="edit-group">
-            <label>Detaylı Tur Programı (Her satıra bir gün):</label>
-            <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4">${itineraryText}</textarea>
+          <div class="tour-details-grid tour-details-full-width">
+            <div class="edit-group">
+              <label>Tur Hakkında (Detaylı Açıklama):</label>
+              <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4">${detail.description || ''}</textarea>
+            </div>
+            <div class="edit-group">
+              <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
+              <textarea placeholder="🏛️ Tarihi ve kültürel mekanları ziyaret&#10;🍽️ Yerel lezzetleri tatma fırsatı&#10;📸 Profesyonel fotoğraf çekimi&#10;🎁 Anı eşyaları satın alma imkanı" class="tour-detail-highlights" rows="4">${highlightsText}</textarea>
+            </div>
           </div>
-        </div>
-        <div class="tour-details-actions">
-          <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTourDetail(this)">🗑️ Bu Tur Detayını Sil</button>
+          <div class="tour-details-grid tour-details-full-width">
+            <div class="edit-group">
+              <label>Tur Programı (Her satıra bir gün):</label>
+              <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4">${itineraryText}</textarea>
+            </div>
+          </div>
+          <div class="tour-details-actions">
+            <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTourDetail(this)">🗑️ Bu Tur Detayını Sil</button>
+          </div>
         </div>
       `;
       container.appendChild(newItem);
       
       // Upload event listener ekle (global fonksiyon kullanıyoruz)
       if (typeof setupTourDetailUploads === 'function') {
-        setupTourDetailUploads(newItem);
+        setupTourDetailUploads(newItem, detail);
+      }
+      if (typeof window.initTourDetailAccordion === 'function') {
+        window.initTourDetailAccordion(newItem, { open: index === 0 });
+      }
+      if (typeof window.updateTourDetailHeader === 'function') {
+        window.updateTourDetailHeader(newItem);
       }
     });
   }
@@ -1547,21 +1675,13 @@ class AdminPanel {
   }
 
   loadOrgDescriptions(descriptionsObj = {}) {
-    // localStorage kaldırıldı; backend'den gelen veri doğrudan kullanılıyor
-    const container = document.getElementById('orgDescriptionsList');
-    
-    if (container) {
-      container.innerHTML = '';
-      
-      Object.keys(descriptionsObj).forEach(orgName => {
-        if (typeof window.addOrgDescription === 'function') {
-          window.addOrgDescription({
-            name: orgName,
-            description: descriptionsObj[orgName]
-          });
-        }
-      });
-    }
+    if (!window.orgDescriptionsStore) window.orgDescriptionsStore = {};
+    Object.keys(descriptionsObj).forEach(orgName => {
+      if (orgName) window.orgDescriptionsStore[orgName] = descriptionsObj[orgName] || '';
+      if (typeof window.addOrgDescription === 'function') {
+        window.addOrgDescription({ name: orgName, description: descriptionsObj[orgName] || '' });
+      }
+    });
   }
 }
 
@@ -1620,7 +1740,7 @@ class ContentUpdater {
 
     // Logo ve görselleri Supabase Storage'dan yükle (Ana sayfa için)
     try {
-      await this.loadMainPageImages();
+      await this.loadMainPageImages(content);
     } catch (error) {
     }
       
@@ -1687,23 +1807,35 @@ class ContentUpdater {
 
     // Taşımacılık hizmetlerini güncelle
     const transportCards = document.querySelectorAll('.transport-card .card-content');
-    if (transportCards.length >= 2) {
-      // Öğrenci servisi
-      if (content.studentServiceTitle || content.studentServiceDesc) {
-        const studentCard = transportCards[0];
-        const title = studentCard.querySelector('h3');
-        const desc = studentCard.querySelector('p');
-        if (title && content.studentServiceTitle) title.textContent = content.studentServiceTitle;
-        if (desc && content.studentServiceDesc) desc.textContent = content.studentServiceDesc;
-      }
-      
-      // Personel servisi
-      if (content.staffServiceTitle || content.staffServiceDesc) {
-        const staffCard = transportCards[1];
-        const title = staffCard.querySelector('h3');
-        const desc = staffCard.querySelector('p');
-        if (title && content.staffServiceTitle) title.textContent = content.staffServiceTitle;
-        if (desc && content.staffServiceDesc) desc.textContent = content.staffServiceDesc;
+    if (transportCards.length > 0) {
+      // Yeni dinamik format
+      if (content.transportServicesList) {
+        try {
+          const services = JSON.parse(content.transportServicesList);
+          services.forEach((service, i) => {
+            if (i < transportCards.length) {
+              const card = transportCards[i];
+              const titleEl = card.querySelector('h3');
+              const descEl = card.querySelector('p');
+              if (titleEl && service.title) titleEl.textContent = service.title;
+              if (descEl && service.desc) descEl.textContent = service.desc;
+            }
+          });
+        } catch(e) {}
+      } else {
+        // Geriye dönük uyumluluk: eski alan adları
+        if (content.studentServiceTitle || content.studentServiceDesc) {
+          const title = transportCards[0]?.querySelector('h3');
+          const desc = transportCards[0]?.querySelector('p');
+          if (title && content.studentServiceTitle) title.textContent = content.studentServiceTitle;
+          if (desc && content.studentServiceDesc) desc.textContent = content.studentServiceDesc;
+        }
+        if ((content.staffServiceTitle || content.staffServiceDesc) && transportCards.length >= 2) {
+          const title = transportCards[1]?.querySelector('h3');
+          const desc = transportCards[1]?.querySelector('p');
+          if (title && content.staffServiceTitle) title.textContent = content.staffServiceTitle;
+          if (desc && content.staffServiceDesc) desc.textContent = content.staffServiceDesc;
+        }
       }
     }
 
@@ -2135,43 +2267,48 @@ class ContentUpdater {
     }
   }
 
-  static addScrollButtons(scrollSelector, leftBtnSelector, rightBtnSelector) {
+  static addScrollButtons(scrollSelector, leftBtnSelector, rightBtnSelector, singleItem = false) {
     const scrollContainer = document.querySelector(scrollSelector);
     const leftBtn = document.querySelector(leftBtnSelector);
     const rightBtn = document.querySelector(rightBtnSelector);
     
     if (!scrollContainer || !leftBtn || !rightBtn) return;
 
-    const scrollAmount = 240; // Her seferinde 2 item kaydır (200px + 16px gap)
+    const getScrollAmount = () => {
+      if (singleItem) {
+        // Tek resim genişliği + gap (resim yüklenmiş olabilir, clientWidth kullan)
+        const firstImg = scrollContainer.querySelector('img');
+        return firstImg ? firstImg.clientWidth + 12 : 212;
+      }
+      return 240; // 2 öğe kaydır (partner mantığı)
+    };
 
     const updateButtons = () => {
       const isAtStart = scrollContainer.scrollLeft <= 0;
-      const isAtEnd = scrollContainer.scrollLeft >= (scrollContainer.scrollWidth - scrollContainer.clientWidth);
-      
+      const isAtEnd = scrollContainer.scrollLeft >= (scrollContainer.scrollWidth - scrollContainer.clientWidth - 1);
       leftBtn.disabled = isAtStart;
       rightBtn.disabled = isAtEnd;
     };
 
     leftBtn.addEventListener('click', () => {
-      scrollContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      scrollContainer.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' });
     });
 
     rightBtn.addEventListener('click', () => {
-      scrollContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      scrollContainer.scrollBy({ left: getScrollAmount(), behavior: 'smooth' });
     });
 
     scrollContainer.addEventListener('scroll', updateButtons);
-    updateButtons(); // İlk durumu kontrol et
+    updateButtons();
   }
 
-  static async loadMainPageImages() {
+  static async loadMainPageImages(content = null) {
     if (!window.backendManager) return;
     
     // Sadece index.html'de çalıştır
     if (!window.location.pathname.includes('index.html') && window.location.pathname !== '/') {
       return;
     }
-
 
     // Header Logo (cache-busting ile)
     try {
@@ -2192,79 +2329,8 @@ class ContentUpdater {
       console.warn('Header logo hatası:', error);
     }
 
-    // Carousel Görselleri (Preload + Smooth Transition)
-    try {
-      const carousel = document.querySelector('.carousel');
-      
-      if (carousel) {
-        const carouselUrls = [
-          window.backendManager.getImageUrl('site-images', 'carousel/slide-0.png'),
-          window.backendManager.getImageUrl('site-images', 'carousel/slide-1.png'),
-          window.backendManager.getImageUrl('site-images', 'carousel/slide-2.png')
-        ];
-        
-        // Görselleri preload et (flash'ı önlemek için)
-        const preloadImages = carouselUrls.map(url => {
-          return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(url);
-            img.onerror = () => resolve(url); // Hata olsa bile devam et
-            img.src = url;
-          });
-        });
-        
-        // Tüm görseller yüklendikten sonra carousel'i güncelle
-        Promise.all(preloadImages).then(() => {
-          carousel.setAttribute('data-images', JSON.stringify(carouselUrls));
-          
-          const carouselImg = carousel.querySelector('img');
-          const dots = carousel.querySelector('.carousel-dots');
-          
-          if (carouselImg && dots) {
-            let currentIndex = 0;
-            
-            const renderCarousel = () => {
-              const nextUrl = carouselUrls[currentIndex];
-              carouselImg.style.opacity = '0';
-              
-              setTimeout(() => {
-                // Görsel yüklendikten sonra fade in (beyaz flash önlenir)
-                const doFadeIn = () => { carouselImg.style.opacity = '1'; };
-                carouselImg.onload = doFadeIn;
-                carouselImg.onerror = doFadeIn;
-                carouselImg.src = nextUrl;
-                
-                // Dots'ları güncelle
-                dots.innerHTML = '';
-                carouselUrls.forEach((_, i) => {
-                  const btn = document.createElement('button');
-                  if (i === currentIndex) btn.classList.add('active');
-                  btn.addEventListener('click', () => {
-                    currentIndex = i;
-                    renderCarousel();
-                  });
-                  dots.appendChild(btn);
-                });
-              }, 80);
-            };
-            
-            carouselImg.style.transition = 'opacity 0.25s ease-in-out';
-            
-            renderCarousel();
-            
-            // Auto-rotate (4 saniyede bir)
-            setInterval(() => {
-              currentIndex = (currentIndex + 1) % carouselUrls.length;
-              renderCarousel();
-            }, 4000);
-            
-          }
-        });
-      } else {
-      }
-    } catch (error) {
-      console.warn('Carousel hatası:', error);
-    }
+    // Carousel: main.js (updatePageWithSiteContent / loadCarouselFromStorage) üzerinden yönetiliyor.
+    // Çakışma (çift setInterval, hızlı dönüş) önlemek için ContentUpdater carousel'e dokunmuyor.
 
     // Hakkımızda Görseli (.visual-bg CSS background güncelle)
     try {
@@ -2450,25 +2516,30 @@ class ContentUpdater {
       if (subtitleEl) subtitleEl.textContent = tourDetail.subtitle || '';
 
       // Harita görselini güncelle
-      const mapImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${tourLink}/mapImage.png`);
+      const normalizedTourId = window.normalizeTourId(tourLink);
+      const mapImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${normalizedTourId}/mapImage.png`);
       const mapImageEl = document.getElementById('mapImage');
       if (mapImageEl) {
         mapImageEl.style.setProperty('--bg', `url('${mapImageUrl}')`);
       }
 
-      // Tur fotoğraflarını güncelle (4 adet)
+      // Tur fotoğraflarını güncelle (tourDetail.images varsa onu kullan, yoksa storage'dan probe)
       const galleryEl = document.getElementById('tourGallery');
       if (galleryEl) {
         galleryEl.innerHTML = '';
-        for (let i = 1; i <= 4; i++) {
-          const imageUrl = window.backendManager.getImageUrl('tour-images', `tours/${tourLink}/image${i}.png`);
+        const savedImageUrls = (tourDetail.images && Array.isArray(tourDetail.images))
+          ? tourDetail.images
+          : [];
+        const storageImageUrls = await getTourStorageImageUrls(normalizedTourId);
+        const imageUrls = mergeTourImageUrls(savedImageUrls, storageImageUrls);
+        imageUrls.forEach((url, i) => {
           const img = document.createElement('img');
-          img.src = imageUrl;
-          img.alt = `Tur Fotoğrafı ${i}`;
-          img.style = 'width:100%;height:200px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s;';
-          img.onclick = function() { openImageModal(this.src); };
+          img.src = window.withSafeCacheBuster(url);
+          img.alt = `Tur Fotoğrafı ${i + 1}`;
+          img.onclick = function() { if (typeof openImageModal === 'function') openImageModal(this.src); };
           galleryEl.appendChild(img);
-        }
+        });
+        ContentUpdater.addScrollButtons('#tourGallery', '#tourGalleryScrollLeft', '#tourGalleryScrollRight', true);
       }
 
       // Tur açıklamasını güncelle
@@ -2496,7 +2567,8 @@ class ContentUpdater {
         tourDetail.itinerary.forEach((day, index) => {
           const li = document.createElement('li');
           li.style = `padding: 12px 0; ${index < tourDetail.itinerary.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''} font-size: 1.1rem; line-height: 1.6;`;
-          li.textContent = day;
+          const dayContent = (day.replace(/^Gün \d+:\s*/i, '').trim()) || day;
+          li.textContent = `Gün: ${dayContent}`;
           itineraryEl.appendChild(li);
         });
       }
@@ -2519,6 +2591,74 @@ class ContentUpdater {
 }
 
 // Tur detay yönetimi fonksiyonları
+window.normalizeTourId = window.normalizeTourId || function(rawValue = '') {
+  return String(rawValue || '')
+    .toLowerCase()
+    .trim()
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+};
+
+window.sanitizeImageUrl = window.sanitizeImageUrl || function(url = '') {
+  const value = String(url || '').trim();
+  if (!value) return '';
+  if (value.startsWith('data:') || value.startsWith('blob:')) {
+    return value.split('?')[0];
+  }
+  return value;
+};
+
+window.withSafeCacheBuster = window.withSafeCacheBuster || function(url = '') {
+  const cleanUrl = window.sanitizeImageUrl(url);
+  if (!cleanUrl) return '';
+  const isHttpOrRelative = /^https?:\/\//i.test(cleanUrl) || cleanUrl.startsWith('/');
+  if (!isHttpOrRelative) return cleanUrl;
+  return cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`;
+};
+
+function parseTourImageIndex(url = '') {
+  const cleanUrl = window.sanitizeImageUrl(url);
+  const match = cleanUrl.match(/\/image(\d+)\.png$/i);
+  return match ? parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+function mergeTourImageUrls(savedUrls = [], storageUrls = []) {
+  const unique = new Map();
+  [...savedUrls, ...storageUrls].forEach((url) => {
+    const clean = window.sanitizeImageUrl(url);
+    if (!clean) return;
+    if (!unique.has(clean)) unique.set(clean, clean);
+  });
+  return Array.from(unique.values()).sort((a, b) => parseTourImageIndex(a) - parseTourImageIndex(b));
+}
+
+async function getTourStorageImageUrls(linkOrTourId = '') {
+  if (!window.backendManager || !linkOrTourId) return [];
+  const tourId = window.normalizeTourId(linkOrTourId);
+  try {
+    const folderFiles = await window.backendManager.listImages('tour-images', `tours/${tourId}`);
+    const imageFiles = (folderFiles || [])
+      .map(file => file?.name || '')
+      .filter(name => /^image\d+\.png$/i.test(name))
+      .sort((a, b) => {
+        const aIdx = parseInt((a.match(/\d+/) || ['0'])[0], 10);
+        const bIdx = parseInt((b.match(/\d+/) || ['0'])[0], 10);
+        return aIdx - bIdx;
+      });
+    return imageFiles.map(name => window.backendManager.getImageUrl('tour-images', `tours/${tourId}/${name}`));
+  } catch (error) {
+    console.warn('Tur detay görselleri listelenemedi:', error);
+    return [];
+  }
+}
+
 function addTourDetail() {
   const tourDetailsList = document.getElementById('tourDetailsList');
   if (tourDetailsList) {
@@ -2556,9 +2696,22 @@ function addTourDetailItem(data) {
 function setupTourImageUpload(item) {
   const upload = item.querySelector('.tour-image-upload');
   const preview = item.querySelector('.tour-image-preview');
+  const removeBtn = item.querySelector('.remove-tour-image');
   if (upload && preview) {
     upload.addEventListener('change', function(e) {
       handleTourImageUpload(e, preview);
+    });
+  }
+  if (removeBtn && preview) {
+    removeBtn.addEventListener('click', function() {
+      const tourItem = removeBtn.closest('.list-item');
+      const link = tourItem?.querySelector('.tour-link')?.value?.trim();
+      if (link && window.backendManager) {
+        const tourId = link.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+        window.backendManager.deleteImage('tour-images', `tours/${tourId}/main.png`).catch(() => {});
+      }
+      preview.src = '';
+      preview.style.display = 'none';
     });
   }
 }
@@ -2567,20 +2720,66 @@ function handleTourImageUpload(event, previewElement) {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
       previewElement.src = e.target.result;
       previewElement.style.display = 'block';
-      
-      // Görseli localStorage'a kaydet
       const tourItem = event.target.closest('.list-item');
-      const tourName = tourItem.querySelector('.tour-name').value;
-      if (tourName) {
-        saveTourImage(tourName, e.target.result);
+      const tourLink = tourItem?.querySelector('.tour-link')?.value?.trim();
+      if (tourLink && window.backendManager) {
+        try {
+          const tourId = tourLink.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+          const publicUrl = await window.backendManager.uploadTourImage(e.target.result, tourId, 'main');
+          previewElement.src = `${publicUrl}?v=${Date.now()}`;
+          if (window.adminPanel) window.adminPanel.showSuccessMessage();
+        } catch (err) {
+          console.error('Tur görseli yükleme hatası:', err);
+          alert('Tur görseli yüklenirken hata oluştu.');
+        }
+      } else {
+        alert('Lütfen önce tur detay linkini girin (örn: kapadokya)');
       }
     };
     reader.readAsDataURL(file);
   }
 }
+
+// Tur detay görsel slotu oluştur (dinamik - sınırsız)
+window.createTourDetailImageSlot = function(container, index, imgSrc = '') {
+  const div = document.createElement('div');
+  div.className = 'tour-detail-image-item';
+  div.setAttribute('data-index', index);
+  div.innerHTML = `
+    <div class="file-upload" style="margin-bottom: 8px;">
+      <input type="file" class="tour-detail-image-upload" data-index="${index}" accept="image/*" />
+      📁 Değiştir
+    </div>
+    <img class="tour-detail-image-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; ${imgSrc ? 'display:block;' : 'display:none;'}" src="${imgSrc || ''}" />
+    <button type="button" class="btn btn-ghost btn-sm remove-tour-detail-image" style="margin-top: 4px; font-size: 11px;">🗑️ Sil</button>
+  `;
+  container.appendChild(div);
+};
+
+// Tur detay görsellerini yükle (admin panelinde göster) - images array veya storage probe
+window.loadTourDetailImagesFromStorage = async function(item, link, imagesArray) {
+  const container = item?.querySelector('.tour-detail-images');
+  if (!container) return;
+  const savedUrls = Array.isArray(imagesArray) ? imagesArray : [];
+  const storageUrls = link ? await getTourStorageImageUrls(link) : [];
+  const urls = mergeTourImageUrls(savedUrls, storageUrls);
+  container.innerHTML = '';
+  if (urls.length === 0) {
+    window.createTourDetailImageSlot(container, 1);
+  } else {
+    urls.forEach((url, i) => {
+      const cleanUrl = window.sanitizeImageUrl(url);
+      const shouldBustCache = /^https?:\/\//i.test(cleanUrl) || cleanUrl.startsWith('/');
+      const imageSrc = shouldBustCache
+        ? (cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`)
+        : cleanUrl;
+      window.createTourDetailImageSlot(container, i + 1, imageSrc);
+    });
+  }
+};
 
 async function saveTourImage(tourName, imageData) {
   try {
@@ -2613,7 +2812,7 @@ async function saveTourImage(tourName, imageData) {
 }
 
 // Ana sayfalarda içerikleri güncelle
-if (window.location.pathname !== '/admin.html') {
+if (!window.location.pathname.includes('admin.html')) {
   document.addEventListener('DOMContentLoaded', () => {
     ContentUpdater.updateSiteContent();
     
@@ -2634,10 +2833,7 @@ if (window.location.pathname !== '/admin.html') {
       }
     });
 
-    // Popup ayarlarını yükle (sadece admin sayfasında)
-    if (window.location.pathname.includes('admin.html')) {
-      loadPopupSettings();
-    }
+    // Popup ayarları AdminPanel.init() içinden yükleniyor
   });
 }
 
@@ -2648,11 +2844,6 @@ if (window.location.pathname !== '/admin.html') {
 // Popup ayarlarını yükle
 async function loadPopupSettings() {
   try {
-    // Sadece admin sayfasında çalış
-    if (!window.location.pathname.includes('admin.html')) {
-      return;
-    }
-
     if (!window.supabase) {
       console.warn('Supabase bağlantısı yok');
       return;
@@ -2661,14 +2852,17 @@ async function loadPopupSettings() {
     const { data, error } = await window.supabase
       .from('popup_settings')
       .select('*')
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error) {
       console.error('Popup ayarları yüklenirken hata:', error);
       return;
     }
 
-    if (data) {
+    const row = data || null;
+    if (row) {
       // HTML elementlerini güvenli şekilde al
       const popupActive = document.getElementById('popupActive');
       const popupTitle = document.getElementById('popupTitle');
@@ -2680,21 +2874,28 @@ async function loadPopupSettings() {
       const popupImageText = document.getElementById('popupImageText');
 
       // Elementler varsa değerleri ata
-      if (popupActive) popupActive.checked = data.is_active;
-      if (popupTitle) popupTitle.value = data.title || '';
-      if (popupContent) popupContent.value = data.content || '';
-      if (popupLinkUrl) popupLinkUrl.value = data.link_url || '';
-      if (popupLinkText) popupLinkText.value = data.link_text || 'Detay';
-      if (popupShowOnce) popupShowOnce.checked = data.show_once;
+      if (popupActive) popupActive.checked = row.is_active;
+      if (popupTitle) popupTitle.value = row.title || '';
+      if (popupContent) popupContent.value = row.content || '';
+      if (popupLinkUrl) popupLinkUrl.value = row.link_url || '';
+      if (popupLinkText) popupLinkText.value = row.link_text || 'Detay';
+      if (popupShowOnce) popupShowOnce.checked = row.show_once;
+      togglePopupActive();
 
       // Görsel varsa göster
-      if (data.image_url && popupImagePreview && popupImageText) {
+      if (row.image_url && popupImagePreview && popupImageText) {
         popupImagePreview.innerHTML = `
-          <img src="${data.image_url}" alt="Popup görseli" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid var(--brand-50);">
+          <img src="${row.image_url}" alt="Popup görseli" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid var(--brand-50);">
           <button onclick="removePopupImage()" class="btn btn-outline btn-sm" style="margin-left: 10px;">Görseli Kaldır</button>
         `;
         popupImageText.textContent = 'Görsel Değiştir';
+        const popupImageInput = document.getElementById('popupImage');
+        if (popupImageInput) {
+          popupImageInput.dataset.uploadedUrl = row.image_url;
+        }
       }
+    } else {
+      togglePopupActive();
     }
   } catch (error) {
     console.error('Popup ayarları yüklenirken hata:', error);
@@ -2724,7 +2925,7 @@ async function handlePopupImageUpload(input) {
     // Dosyayı Supabase Storage'a yükle
     const fileExt = file.name.split('.').pop();
     const fileName = `popup-${Date.now()}.${fileExt}`;
-    const filePath = `site-images/${fileName}`;
+    const filePath = `popups/${fileName}`;
 
     const { data, error } = await window.supabase.storage
       .from('site-images')
@@ -2768,7 +2969,9 @@ function removePopupImage() {
 }
 
 // Popup ayarlarını kaydet
-async function savePopupSettings() {
+async function savePopupSettings(options = {}) {
+  const silent = options.silent === true;
+  const throwOnError = options.throwOnError === true;
   try {
     const isActive = document.getElementById('popupActive').checked;
     const title = document.getElementById('popupTitle').value.trim();
@@ -2779,19 +2982,28 @@ async function savePopupSettings() {
     
     // Görsel URL'sini al
     const imageInput = document.getElementById('popupImage');
-    const imageUrl = imageInput.dataset.uploadedUrl || '';
+    const previewImage = document.querySelector('#popupImagePreview img');
+    const imageUrl = imageInput.dataset.uploadedUrl || previewImage?.src || '';
 
     if (!window.supabase) {
       console.error('Supabase bağlantısı yok');
-      alert('Supabase bağlantısı yok!');
-      return;
+      if (!silent) alert('Supabase bağlantısı yok!');
+      if (throwOnError) throw new Error('Supabase bağlantısı yok');
+      return false;
     }
 
-    // Mevcut popup ayarlarını kontrol et
-    const { data: existingData } = await window.supabase
+    // Mevcut popup ayarını kontrol et (en son güncellenen kaydı al)
+    const { data: existingData, error: existingRowsError } = await window.supabase
       .from('popup_settings')
       .select('id')
-      .single();
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingRowsError) {
+      console.error('Popup mevcut kayıt kontrolü hatası:', existingRowsError);
+      if (throwOnError) throw existingRowsError;
+      return false;
+    }
 
     const popupData = {
       is_active: isActive,
@@ -2809,30 +3021,45 @@ async function savePopupSettings() {
       result = await window.supabase
         .from('popup_settings')
         .update(popupData)
-        .eq('id', existingData.id);
+        .eq('id', existingData.id)
+        .select();
     } else {
       // Yeni kayıt oluştur
       result = await window.supabase
         .from('popup_settings')
-        .insert([popupData]);
+        .insert([popupData])
+        .select();
     }
 
     if (result.error) {
       console.error('Popup ayarları kaydedilirken hata:', result.error);
-      alert('Popup ayarları kaydedilirken hata oluştu!');
-      return;
+      if (!silent) alert('Popup ayarları kaydedilirken hata oluştu: ' + result.error.message);
+      if (throwOnError) throw result.error;
+      return false;
     }
 
-    alert('Popup ayarları başarıyla kaydedildi!');
+    // Hiç satır etkilenmediyse (örn. RLS politikası engelledi) hata ver
+    if (!result.data || result.data.length === 0) {
+      const rlsError = new Error('Popup ayarları kaydedilemedi. Supabase izin politikası (RLS) güncellemeyi engelliyor olabilir.');
+      console.error(rlsError.message);
+      if (!silent) alert(rlsError.message);
+      if (throwOnError) throw rlsError;
+      return false;
+    }
+
+    if (!silent) alert('Popup ayarları başarıyla kaydedildi!');
     
     // Cache'i temizle
     if (window.preloader) {
       window.preloader.clearCache('popupSettings');
     }
+    return true;
 
   } catch (error) {
     console.error('Popup ayarları kaydedilirken hata:', error);
-    alert('Popup ayarları kaydedilirken hata oluştu!');
+    if (!silent) alert('Popup ayarları kaydedilirken hata oluştu!');
+    if (throwOnError) throw error;
+    return false;
   }
 }
 

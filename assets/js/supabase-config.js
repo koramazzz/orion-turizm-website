@@ -143,7 +143,9 @@
       if (error) throw error;
       return user;
     } catch (error) {
-      console.error('Kullanıcı alınamadı:', error.message);
+      if (error.message !== 'Auth session missing!') {
+        console.error('Kullanıcı alınamadı:', error.message);
+      }
       return null;
     }
   }
@@ -522,15 +524,17 @@
         for (const org of orgsArray) {
           const existingOrg = existingOrgs.find(existing => existing.name === org.name);
           
+          // Butonlar, metin ve yetkili kişileri 'description' alanında birleşik JSON olarak sakla
+          const textDesc = (org.text || '').trim();
+          const hasButtons = org.buttons && org.buttons.length > 0;
+          const hasContacts = org.contacts && org.contacts.length > 0;
           const orgData = {
             name: org.name,
             type: org.type,
             logo_url: org.logo || null,
-            contract_url: org.contractUrl || null,
-            vita_web_url: org.vitaWebUrl || null,
-            vita_app_url: org.vitaAppUrl || null,
-            payment_url: org.paymentUrl || null,
-            description: org.description || null
+            description: (hasButtons || textDesc || hasContacts)
+              ? JSON.stringify({ v: 2, buttons: org.buttons || [], text: textDesc, contacts: org.contacts || [] })
+              : null
           };
 
           if (existingOrg) {
@@ -831,22 +835,6 @@
     }
   }
 
-  // Turları getir
-  async getTours() {
-    try {
-      const { data, error } = await this.supabase
-        .from('tours')
-        .select('*')
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Turlar alınamadı:', error);
-      return [];
-    }
-  }
-
   // Tur kaydet
   async saveTour(tourData) {
     try {
@@ -939,9 +927,19 @@
       // Object formatına çevir
       const descriptions = {};
       data.forEach(org => {
-        if (org.description) {
+        if (!org.description) return;
+        const trimmed = org.description.trim();
+        if (trimmed.startsWith('{')) {
+          // Yeni birleşik format: {v:2, buttons, text}
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed.text) descriptions[org.name] = parsed.text;
+          } catch(e) {}
+        } else if (!trimmed.startsWith('[')) {
+          // Eski düz metin formatı
           descriptions[org.name] = org.description;
         }
+        // Sadece buton dizisi olan eski kayıtlar metin içermez, atla
       });
       
       return descriptions;
@@ -963,10 +961,24 @@
       }
 
       // Her bir kurum için description alanını güncelle (isme göre)
+      // v2 JSON formatıyla sakla, mevcut button verisi varsa koru
       for (const [name, description] of entries) {
+        const existing = await this.supabase
+          .from('transport_orgs')
+          .select('description')
+          .eq('name', name)
+          .single();
+        let existingButtons = [];
+        if (existing.data && existing.data.description) {
+          try {
+            const parsed = JSON.parse(existing.data.description);
+            if (parsed && parsed.v === 2) existingButtons = parsed.buttons || [];
+          } catch (_) { /* ham metin, buton yok */ }
+        }
+        const newDescription = JSON.stringify({ v: 2, buttons: existingButtons, text: description });
         const { error } = await this.supabase
           .from('transport_orgs')
-          .update({ description })
+          .update({ description: newDescription })
           .eq('name', name);
         if (error) throw error;
       }

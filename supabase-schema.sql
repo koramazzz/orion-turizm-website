@@ -32,6 +32,8 @@ CREATE TABLE transport_orgs (
   name VARCHAR(255) NOT NULL,
   type VARCHAR(20) CHECK (type IN ('school', 'factory')) NOT NULL,
   logo_url TEXT,
+  buttons_json TEXT, -- JSON array: [{label, url, style}]
+  -- Eski alanlar (geriye dönük uyumluluk için korunuyor)
   contract_url TEXT,
   vita_web_url TEXT,
   vita_app_url TEXT,
@@ -40,6 +42,9 @@ CREATE TABLE transport_orgs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Mevcut tabloya buttons_json kolonu eklemek için (zaten varsa çalıştırın):
+-- ALTER TABLE transport_orgs ADD COLUMN IF NOT EXISTS buttons_json TEXT;
 
 -- 3. Form Alanları Tablosu
 CREATE TABLE form_fields (

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
@@ -86,6 +86,104 @@
         width: 100%;
         height: 100%;
         cursor: pointer;
+      }
+
+      /* ── Kurum Kartı ── */
+      .org-card {
+        display: block !important;
+        padding: 0 !important;
+        overflow: hidden;
+        border: 1.5px solid var(--brand-100, #e0d4ff);
+        border-radius: 12px;
+        background: #fff;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(122,28,134,.06);
+        transition: box-shadow .2s;
+      }
+      .org-card:hover { box-shadow: 0 4px 16px rgba(122,28,134,.12); }
+
+      .org-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        user-select: none;
+        background: var(--brand-50, #f5f0ff);
+        transition: background .15s;
+      }
+      .org-card-header-toggle:hover ~ * ,
+      .org-card-header:has(.org-card-header-toggle:hover) {
+        background: var(--brand-100, #e0d4ff);
+      }
+      .org-card-header-toggle:hover { text-decoration: none; }
+
+      .org-card-header .org-mini-logo {
+        width: 38px;
+        height: 28px;
+        object-fit: contain;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        background: #fff;
+        display: none;
+        flex-shrink: 0;
+      }
+      .org-card-header .org-name-display {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .org-type-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: var(--brand);
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .org-btn-badge {
+        font-size: 11px;
+        color: var(--brand);
+        background: var(--brand-50, #f5f0ff);
+        border: 1px solid var(--brand-100, #e0d4ff);
+        border-radius: 20px;
+        padding: 2px 8px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .org-card-chevron {
+        font-size: 11px;
+        color: var(--brand);
+        transition: transform .25s;
+        flex-shrink: 0;
+      }
+      .org-card.open .org-card-chevron { transform: rotate(180deg); }
+
+      .org-card-body {
+        display: none;
+        padding: 14px 16px;
+        border-top: 1px solid var(--brand-100, #e0d4ff);
+        background: #fff;
+      }
+      .org-card.open .org-card-body { display: block; }
+
+      .org-card-fields {
+        display: grid;
+        grid-template-columns: 1fr 110px;
+        gap: 10px;
+        margin-bottom: 12px;
+        align-items: start;
+      }
+      .org-card-fields .logo-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
       }
       .save-btn {
         position: fixed;
@@ -186,11 +284,19 @@
         .admin-section div[style*="grid-template-columns"] {
           display: none !important;
         }
-        .admin-section .list-item::before {
+        .admin-section .list-item:not(.org-card)::before {
           content: "Kurum Bilgileri";
           font-weight: 600;
           color: var(--brand);
           margin-bottom: 8px;
+        }
+        .org-card {
+          display: block !important;
+          flex-direction: unset !important;
+          padding: 0 !important;
+        }
+        .org-card .org-card-fields {
+          grid-template-columns: 1fr !important;
         }
       }
       
@@ -226,6 +332,40 @@
         transition: all .2s;
         margin-bottom: 16px;
       }
+
+      .tour-detail-accordion-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .tour-detail-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: left;
+      }
+
+      .tour-detail-toggle-label {
+        font-weight: 600;
+      }
+
+      .tour-detail-toggle-icon {
+        transition: transform .2s ease;
+      }
+
+      .tour-details-item.collapsed .tour-detail-toggle-icon {
+        transform: rotate(-90deg);
+      }
+
+      .tour-detail-body {
+        display: block;
+      }
+
+      .tour-details-item.collapsed .tour-detail-body {
+        display: none;
+      }
       
       .tour-details-item:hover {
         border-color: var(--brand);
@@ -252,6 +392,7 @@
       }
       
       .tour-details-grid .edit-group input,
+      .tour-details-grid .edit-group select,
       .tour-details-grid .edit-group textarea {
         font-size: 14px;
         padding: 8px 10px;
@@ -261,6 +402,7 @@
       }
       
       .tour-details-grid .edit-group input:focus,
+      .tour-details-grid .edit-group select:focus,
       .tour-details-grid .edit-group textarea:focus {
         border-color: var(--brand);
         box-shadow: 0 0 0 2px rgba(122,28,134,.1);
@@ -477,29 +619,8 @@
           <!-- Carousel Görselleri -->
           <div class="edit-group">
             <label>Ana Sayfa Görselleri:</label>
-            <div id="carouselImages">
-              <div class="carousel-image-item" data-index="0">
-                <img src="https://images.unsplash.com/photo-1473625247510-8ceb1760943f?q=80&w=400&auto=format&fit=crop" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;" />
-                <div class="file-upload" style="margin-top: 8px;">
-                  <input type="file" class="carousel-upload" data-index="0" accept="image/*" />
-                  📁 Değiştir
-                </div>
-              </div>
-              <div class="carousel-image-item" data-index="1">
-                <img src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=400&auto=format&fit=crop" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;" />
-                <div class="file-upload" style="margin-top: 8px;">
-                  <input type="file" class="carousel-upload" data-index="1" accept="image/*" />
-                  📁 Değiştir
-                </div>
-              </div>
-              <div class="carousel-image-item" data-index="2">
-                <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=400&auto=format&fit=crop" style="width: 120px; height: 80px; object-fit: cover; border-radius: 6px;" />
-                <div class="file-upload" style="margin-top: 8px;">
-                  <input type="file" class="carousel-upload" data-index="2" accept="image/*" />
-                  📁 Değiştir
-                </div>
-              </div>
-            </div>
+            <div id="carouselImages"></div>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top: 12px;" onclick="window.adminPanel && window.adminPanel.addCarouselImage()">➕ Görsel Ekle</button>
           </div>
 
           <!-- Hakkımızda Görseli -->
@@ -656,27 +777,13 @@
         <!-- Taşımacılık Hizmetleri -->
         <div class="admin-section">
           <h3>🚐 Taşımacılık Hizmetleri</h3>
-          
-          <div class="edit-group">
-            <label>Öğrenci Servisi - Başlık:</label>
-            <input type="text" id="studentServiceTitle" value="Öğrenci Servisi" />
-          </div>
+          <p class="muted">Ana sayfada gösterilecek hizmet kartlarını yönetin. Eğer istenirse ekstra hizmetler için de ekleme yapabiliriz ama şu an todo aşamasında.</p>
 
-          <div class="edit-group">
-            <label>Öğrenci Servisi - Açıklama:</label>
-            <textarea id="studentServiceDesc">Güvenli, konforlu ve zamanında ulaşım.</textarea>
-          </div>
+          <div id="transportServicesList" class="dynamic-list" style="margin-bottom: 10px;"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addTransportService()">➕ Hizmet Ekle</button>
+        </div>
 
-          <div class="edit-group">
-            <label>Personel Servisi - Başlık:</label>
-            <input type="text" id="staffServiceTitle" value="Personel Servisi" />
-          </div>
-
-          <div class="edit-group">
-            <label>Personel Servisi - Açıklama:</label>
-            <textarea id="staffServiceDesc">Fabrika ve kurumlar için servis hizmeti.</textarea>
-          </div>
-                  <!-- Popup Yönetimi -->
+        <!-- Popup Yönetimi -->
         <div class="admin-section">
           <h3>🎯 Popup Yönetimi</h3>
           <p class="muted">Siteye ilk girişte kullanıcılara gösterilecek popup'ı yönetin.</p>
@@ -697,7 +804,7 @@
           </div>
           <div class="edit-group">
             <label>Popup Görseli:</label>
-            <div class="file-upload" onclick="document.getElementById('popupImage').click()">
+            <div class="file-upload">
               <input type="file" id="popupImage" accept="image/*" onchange="handlePopupImageUpload(this)">
               <span id="popupImageText">Görsel Seç</span>
             </div>
@@ -722,8 +829,8 @@
             </p>
           </div>
           <div style="display: flex; gap: 12px;">
-            <button onclick="savePopupSettings()" class="btn btn-primary">Popup Ayarlarını Kaydet</button>
             <button onclick="previewPopup()" class="btn btn-outline">Önizle</button>
+            <button onclick="savePopupSettings()" class="btn btn-primary">💾 Popup Kaydet</button>
           </div>
         </div>
 
@@ -741,7 +848,14 @@
                 <div class="list-item">
                   <input type="text" placeholder="Tur Adı" class="tour-name" />
                   <input type="text" placeholder="Tur Açıklaması" class="tour-description" />
-                  <input type="url" placeholder="Tur Görseli URL" class="tour-image" />
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="file-upload" style="margin: 0;">
+                      <input type="file" class="tour-image-upload" accept="image/*" />
+                      📁 Tur Görseli Yükle
+                    </div>
+                    <img class="tour-image-preview" style="width: 80px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
+                    <button type="button" class="btn btn-ghost btn-sm remove-tour-image" style="font-size: 11px;">🗑️ Görseli Sil</button>
+                  </div>
                   <input type="text" placeholder="Tur Detay Linki (örn: kapadokya)" class="tour-link" />
                   <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTour(this)">🗑️</button>
                 </div>
@@ -824,37 +938,31 @@
             <h3>🏫 Taşımacılık Kurumları</h3>
             <p class="muted">Okul/Fabrika başına logo ve bağlantılar. Ana sayfada gösterilir ve seçim modallarında kullanılır.</p>
 
-            <!-- Başlık Satırı -->
-            <div style="display:grid; grid-template-columns: 2fr 80px 120px 1.5fr 1fr 1fr 1fr 60px; gap:8px; padding:8px 12px; background:var(--brand-50); border-radius:8px; font-weight:600; color:var(--brand); font-size:11px; margin-bottom:8px;">
-              <div>Kurum Adı</div>
-              <div>Tür</div>
-              <div>Logo</div>
-              <div>Sözleşme</div>
-              <div>Vita Web</div>
-              <div>Vita App</div>
-              <div>Ödeme</div>
-              <div>İşlem</div>
-            </div>
-
-            <div id="transportOrgsList" class="dynamic-list"></div>
+            <div id="transportOrgsList" class="dynamic-list" style="display:flex;flex-direction:column;gap:0;"></div>
             <button type="button" class="btn btn-outline btn-sm" onclick="addTransportOrg()">➕ Kurum Ekle</button>
           </div>
 
           <!-- Kurum Açıklama Metinleri -->
           <div class="admin-section">
             <h3>📝 Kurum Açıklama Metinleri</h3>
-            <p class="muted">Her kurum için özel açıklama metinleri yazın. Bu metinler kurum detay sayfasında görünecek.</p>
-            
-            <div id="orgDescriptionsList" class="dynamic-list">
-              <!-- Dinamik açıklama alanları buraya eklenecek -->
+            <p class="muted">Her kurum için özel açıklama metni yazın. Kurum seçip açıklama girin, otomatik kaydedilir.</p>
+
+            <div class="edit-group">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+                <select id="orgDescDropdown" onchange="loadOrgDescriptionForDropdown()" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--bg); color: var(--text);">
+                  <option value="">-- Kurum Seçin --</option>
+                </select>
+                <button type="button" class="btn btn-outline btn-sm" onclick="refreshOrgDescDropdown()" title="Kurum listesini güncelle" style="white-space:nowrap;">🔄 Güncelle</button>
+              </div>
+              <div id="orgDescEditorWrapper" style="display: none;">
+                <label id="orgDescLabel" style="font-weight: 600; color: var(--brand); display: block; margin-bottom: 6px;"></label>
+                <textarea id="orgDescTextarea" rows="5" placeholder="Kurum hakkında açıklama yazın..." oninput="saveCurrentOrgDescription()" style="width: 100%; box-sizing: border-box;"></textarea>
+              </div>
+              <p class="small muted" style="margin-top: 8px;">💡 Önce <strong>Taşımacılık Kurumları</strong> bölümüne kurum ekleyin, ardından 🔄 butonuyla listeyi güncelleyin.</p>
             </div>
-            <div style="display: flex; gap: 12px; margin-top: 12px;">
-              <button type="button" class="btn btn-outline btn-sm" onclick="addOrgDescription()">➕ Açıklama Ekle</button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="syncOrgDescriptions()">🔄 Kurumları Senkronize Et</button>
-            </div>
-            <p class="small muted" style="margin-top: 8px;">
-              💡 "Kurumları Senkronize Et" butonu yukarıda eklenen kurumları otomatik olarak açıklama listesine ekler.
-            </p>
+
+            <!-- Gizli veri deposu (JS tarafından okunur) -->
+            <div id="orgDescriptionsList" style="display:none;"></div>
           </div>
         </div>
 
@@ -991,43 +1099,331 @@
     
     <!-- Dinamik Liste Fonksiyonları -->
     <script>
+      // =====================================================
+      // TAŞIMACILIK HİZMETLERİ (Dinamik Liste)
+      // =====================================================
+
+      function addTransportService(data) {
+        const container = document.getElementById('transportServicesList');
+        if (!container) return;
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.style.cssText = 'display:grid; grid-template-columns: 1fr 2fr auto; gap:10px; align-items:start;';
+        item.innerHTML = `
+          <input type="text" placeholder="Hizmet Başlığı (örn: Öğrenci Servisi)" class="transport-service-title" style="font-weight:600;" value="${data && data.title ? data.title : ''}" />
+          <textarea placeholder="Hizmet Açıklaması..." class="transport-service-desc" rows="2" style="resize:vertical;">${data && data.desc ? data.desc : ''}</textarea>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.list-item').remove()" title="Kaldır" style="margin-top:4px;">🗑️</button>
+        `;
+        container.appendChild(item);
+      }
+
+      // Varsayılan hizmetleri ekle (backend'den yüklenmezse fallback olarak kullanılır)
+      // admin.js'deki loadTransportServices çağrılmadıysa bu fallback devreye girer
+      window._addDefaultTransportServicesIfEmpty = function() {
+        const container = document.getElementById('transportServicesList');
+        if (container && container.children.length === 0) {
+          addTransportService({ title: 'Öğrenci Servisi', desc: 'Güvenli, konforlu ve zamanında ulaşım.' });
+          addTransportService({ title: 'Personel Servisi', desc: 'Fabrika ve kurumlar için servis hizmeti.' });
+        }
+      };
+
+      // =====================================================
+      // KURUM AÇIKLAMA DROPDOWN
+      // =====================================================
+
+      // In-memory açıklama deposu
+      window.orgDescriptionsStore = {};
+
+      function refreshOrgDescDropdown() {
+        const select = document.getElementById('orgDescDropdown');
+        if (!select) return;
+        const currentValue = select.value;
+        // Önce mevcut textarea'daki değeri kaydet
+        saveCurrentOrgDescription();
+        // Dropdown'u yeniden oluştur
+        select.innerHTML = '<option value="">-- Kurum Seçin --</option>';
+        const orgItems = document.querySelectorAll('#transportOrgsList .list-item');
+        let found = false;
+        orgItems.forEach(item => {
+          const name = item.querySelector('.org-name')?.value.trim();
+          if (!name) return;
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          if (name === currentValue) { opt.selected = true; found = true; }
+          select.appendChild(opt);
+        });
+        if (!found) select.value = '';
+        loadOrgDescriptionForDropdown();
+      }
+
+      function loadOrgDescriptionForDropdown() {
+        const select = document.getElementById('orgDescDropdown');
+        const wrapper = document.getElementById('orgDescEditorWrapper');
+        const label = document.getElementById('orgDescLabel');
+        const textarea = document.getElementById('orgDescTextarea');
+        if (!select || !wrapper || !label || !textarea) return;
+        const selectedOrg = select.value;
+        if (!selectedOrg) {
+          wrapper.style.display = 'none';
+          return;
+        }
+        label.textContent = selectedOrg + ' — Açıklama:';
+        textarea.value = window.orgDescriptionsStore[selectedOrg] || '';
+        wrapper.style.display = 'block';
+        textarea.focus();
+      }
+
+      function saveCurrentOrgDescription() {
+        const select = document.getElementById('orgDescDropdown');
+        const textarea = document.getElementById('orgDescTextarea');
+        if (!select || !textarea) return;
+        const selectedOrg = select.value;
+        if (selectedOrg) {
+          window.orgDescriptionsStore[selectedOrg] = textarea.value;
+        }
+      }
+
+      // =====================================================
+      // TAŞIMACILIK KURUMU EKLEME
+      // =====================================================
+
       // Taşımacılık Kurumu Ekleme
       function addTransportOrg(data){
         const container = document.getElementById('transportOrgsList');
         if(!container) return;
         const item = document.createElement('div');
-        item.className = 'list-item';
-        item.style.gridTemplateColumns = '2fr 80px 120px 1.5fr 1fr 1fr 1fr 60px';
+        item.className = 'list-item org-card';
+
         item.innerHTML = `
-          <input type="text" placeholder="Kurum Adı" class="org-name" />
-          <select class="org-type">
-            <option value="school">Okul</option>
-            <option value="factory">Fabrika</option>
-          </select>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-            <div class="file-upload" style="margin:0;font-size:10px;padding:4px 8px;">
-              <input type="file" class="org-logo-upload" accept="image/*" />
-              📁 Logo
+          <!-- Başlık (her zaman görünür) -->
+          <div class="org-card-header">
+            <div class="org-card-header-toggle" onclick="toggleOrgCard(this.closest('.org-card'))"
+              style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer;">
+              <img class="org-mini-logo" alt="" />
+              <span class="org-name-display">Yeni Kurum</span>
+              <span class="org-btn-badge">🔗 0 buton</span>
+              <span class="org-card-chevron">▼</span>
             </div>
-            <img class="org-logo-preview" style="width:50px;height:30px;object-fit:contain;border:1px solid #ddd;border-radius:4px;display:none;" />
+            <select class="org-type"
+              onchange="syncOrgCardHeader(this.closest('.org-card'))"
+              onclick="event.stopPropagation()"
+              style="padding:4px 8px;border:1.5px solid var(--brand-100,#e0d4ff);border-radius:20px;font-family:inherit;font-size:12px;font-weight:600;color:var(--brand);background:var(--brand-50,#f5f0ff);cursor:pointer;flex-shrink:0;">
+              <option value="school">🏫 Okul</option>
+              <option value="factory">🏭 Fabrika</option>
+            </select>
+            <button type="button" class="btn btn-ghost btn-sm"
+              onclick="event.stopPropagation(); this.closest('.org-card').remove()"
+              title="Kurumu Sil" style="margin-left:4px;flex-shrink:0;">🗑️</button>
           </div>
-          <input type="url" placeholder="Sözleşme URL" class="org-contract" />
-          <input type="url" placeholder="Vita Web URL" class="org-vita-web" />
-          <input type="url" placeholder="Vita App URL" class="org-vita-app" />
-          <input type="url" placeholder="Ödeme URL" class="org-payment" />
-          <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="this.parentElement.remove()">🗑️</button>
+
+          <!-- Gövde (katlanabilir) -->
+          <div class="org-card-body">
+            <div class="org-card-fields">
+              <div>
+                <label style="font-size:12px;font-weight:600;color:var(--brand);display:block;margin-bottom:4px;">Kurum Adı</label>
+                <input type="text" placeholder="Kurum Adı" class="org-name"
+                  oninput="syncOrgCardHeader(this.closest('.org-card'))"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e6d9eb;border-radius:8px;font-family:inherit;font-size:13px;" />
+              </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <label style="font-size:12px;font-weight:600;color:var(--brand);display:block;margin-bottom:4px;">Logo</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="file-upload" style="margin:0;font-size:12px;padding:6px 12px;">
+                  <input type="file" class="org-logo-upload" accept="image/*" />
+                  📁 Logo Yükle
+                </div>
+                <img class="org-logo-preview" style="width:60px;height:38px;object-fit:contain;border:1px solid #ddd;border-radius:6px;display:none;" />
+              </div>
+            </div>
+
+            <!-- Buton Editörü -->
+            <div class="org-buttons-editor" style="background:var(--brand-50,#f5f0ff); border:1px solid var(--brand-100,#e0d4ff); border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-weight:600; font-size:13px; color:var(--brand);">🔗 Kurum Sayfası Butonları</span>
+                <button type="button" class="btn btn-outline btn-sm" onclick="addOrgButton(this.closest('.org-buttons-editor'))">➕ Buton Ekle</button>
+              </div>
+              <div style="display:grid; grid-template-columns:2fr 3fr 100px 36px; gap:6px; font-size:11px; font-weight:600; color:var(--brand); margin-bottom:6px; padding:0 4px;">
+                <div>Etiket (ikon + metin)</div><div>URL</div><div>Stil</div><div></div>
+              </div>
+              <div class="org-buttons-list"></div>
+            </div>
+
+            <!-- Yetkili Kişiler Editörü -->
+            <div class="org-contacts-editor" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-weight:600; font-size:13px; color:#166534;">👤 Yetkili Kişiler <small style="font-weight:400;color:#6b7280;">(en fazla 2)</small></span>
+                <button type="button" class="btn btn-sm" onclick="addOrgContact(this.closest('.org-contacts-editor'))"
+                  style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:600;">➕ Kişi Ekle</button>
+              </div>
+              <div class="org-contacts-list" style="display:flex;flex-wrap:wrap;gap:12px;"></div>
+            </div>
+          </div>
         `;
+
         container.appendChild(item);
         setupOrgLogoUpload(item);
+
+        // Veri varsa doldur
         if(data){
-          item.querySelector('.org-name').value = data.name||'';
-          item.querySelector('.org-type').value = data.type||'school';
-          item.querySelector('.org-contract').value = data.contractUrl||'';
-          item.querySelector('.org-vita-web').value = data.vitaWebUrl||'';
-          item.querySelector('.org-vita-app').value = data.vitaAppUrl||'';
-          item.querySelector('.org-payment').value = data.paymentUrl||'';
-          if(data.logo){ const p=item.querySelector('.org-logo-preview'); p.src=`${data.logo}?v=${Date.now()}`; p.style.display='block'; }
+          item.querySelector('.org-name').value = data.name || '';
+          item.querySelector('.org-type').value = data.type || 'school';
+          if(data.logo){
+            const p = item.querySelector('.org-logo-preview');
+            p.src = withSafeCacheBuster(data.logo);
+            p.style.display = 'block';
+            const mini = item.querySelector('.org-mini-logo');
+            mini.src = withSafeCacheBuster(data.logo);
+            mini.style.display = 'block';
+          }
+          const editor = item.querySelector('.org-buttons-editor');
+          if(data.buttons && data.buttons.length > 0){
+            data.buttons.forEach(btn => addOrgButton(editor, btn));
+          } else {
+            const legacy = [
+              { label:'📄 Sözleşme İndir', url: data.contractUrl||'', style:'outline' },
+              { label:'🌐 Vita Web Paneli',  url: data.vitaWebUrl||'',  style:'outline' },
+              { label:'📱 Vita Uygulaması',  url: data.vitaAppUrl||'',  style:'outline' },
+              { label:'💳 Ödeme Yap',        url: data.paymentUrl||'', style:'primary'  },
+            ];
+            legacy.forEach(btn => addOrgButton(editor, btn));
+          }
+          // Yetkili kişileri yükle
+          if(data.contacts && data.contacts.length > 0){
+            const contactsEditor = item.querySelector('.org-contacts-editor');
+            data.contacts.forEach(c => addOrgContact(contactsEditor, c));
+          }
+          syncOrgCardHeader(item);
         }
+      }
+
+      function toggleOrgCard(card){
+        card.classList.toggle('open');
+      }
+
+      function syncOrgCardHeader(card){
+        const name = card.querySelector('.org-name')?.value || 'Yeni Kurum';
+        const count = card.querySelectorAll('.org-btn-row').length;
+        const nameDisplay = card.querySelector('.org-name-display');
+        const btnBadge = card.querySelector('.org-btn-badge');
+        if(nameDisplay) nameDisplay.textContent = name || 'Yeni Kurum';
+        if(btnBadge) btnBadge.textContent = `🔗 ${count} buton`;
+      }
+
+      function addOrgButton(editor, data){
+        const list = editor.querySelector('.org-buttons-list');
+        const row = document.createElement('div');
+        row.className = 'org-btn-row';
+        row.style.cssText = 'display:grid; grid-template-columns:2fr 3fr 100px 36px; gap:6px; align-items:center; margin-bottom:6px;';
+        row.innerHTML = `
+          <input type="text" placeholder="📄 Sözleşme İndir" class="org-btn-label" value="${data && data.label ? data.label : ''}" />
+          <input type="url"  placeholder="https://..." class="org-btn-url" value="${data && data.url ? data.url : ''}" />
+          <select class="org-btn-style">
+            <option value="outline" ${(!data || data.style !== 'primary') ? 'selected' : ''}>Çerçeveli</option>
+            <option value="primary" ${data && data.style === 'primary' ? 'selected' : ''}>Dolu (mor)</option>
+          </select>
+          <button type="button" class="btn btn-ghost btn-sm"
+            onclick="var c=this.closest('.org-card'); this.closest('.org-btn-row').remove(); syncOrgCardHeader(c)"
+            title="Kaldır">🗑️</button>
+        `;
+        list.appendChild(row);
+        const card = editor.closest('.org-card');
+        if(card) syncOrgCardHeader(card);
+      }
+
+      // Eski isimle çağrılanlar için uyumluluk
+      function updateOrgBtnCount(item){ syncOrgCardHeader(item); }
+
+      // ── YETKİLİ KİŞİ FONKSİYONLARI ──────────────────
+
+      function addOrgContact(editor, data) {
+        const list = editor.querySelector('.org-contacts-list');
+        if (!list) return;
+        if (list.querySelectorAll('.org-contact-card').length >= 2) {
+          alert('En fazla 2 yetkili kişi eklenebilir.');
+          return;
+        }
+        const card = document.createElement('div');
+        card.className = 'org-contact-card';
+        card.style.cssText = `
+          display:flex; flex-direction:column; align-items:center; gap:8px;
+          background:#fff; border:1.5px solid #bbf7d0; border-radius:12px;
+          padding:12px 10px; width:160px; position:relative;
+        `;
+        card.innerHTML = `
+          <button type="button" onclick="this.closest('.org-contact-card').remove()"
+            style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:#9ca3af;" title="Kaldır">✕</button>
+
+          <!-- Vesikalık Fotoğraf -->
+          <div class="contact-photo-area" style="position:relative;cursor:pointer;"
+            onclick="this.querySelector('.contact-photo-upload').click()">
+            <img class="contact-photo-preview"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='100' viewBox='0 0 80 100'%3E%3Crect width='80' height='100' fill='%23e5e7eb' rx='8'/%3E%3Ccircle cx='40' cy='35' r='18' fill='%239ca3af'/%3E%3Cellipse cx='40' cy='80' rx='28' ry='22' fill='%239ca3af'/%3E%3C/svg%3E"
+              style="width:80px;height:100px;object-fit:cover;border-radius:8px;border:2px solid #d1fae5;display:block;" />
+            <div style="position:absolute;bottom:4px;right:4px;background:#16a34a;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;">📷</div>
+            <input type="file" class="contact-photo-upload" accept="image/*"
+              style="position:absolute;opacity:0;width:0;height:0;" />
+          </div>
+
+          <input type="text" class="contact-name" placeholder="Ad Soyad"
+            style="width:100%;padding:5px 8px;border:1.5px solid #d1fae5;border-radius:6px;font-size:12px;font-weight:600;text-align:center;font-family:inherit;" />
+          <input type="text" class="contact-title" placeholder="Görev / Unvan"
+            style="width:100%;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:11px;text-align:center;font-family:inherit;color:#6b7280;" />
+          <input type="tel" class="contact-phone" placeholder="📞 Telefon"
+            style="width:100%;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:11px;text-align:center;font-family:inherit;" />
+          <input type="email" class="contact-email" placeholder="✉️ E-posta"
+            style="width:100%;padding:5px 8px;border:1.5px solid #e5e7eb;border-radius:6px;font-size:11px;text-align:center;font-family:inherit;" />
+        `;
+        list.appendChild(card);
+        setupContactPhotoUpload(card);
+
+        if (data) {
+          if (data.photo) {
+            const img = card.querySelector('.contact-photo-preview');
+            img.src = data.photo;
+          }
+          if (data.name)  card.querySelector('.contact-name').value  = data.name;
+          if (data.title) card.querySelector('.contact-title').value = data.title;
+          if (data.phone) card.querySelector('.contact-phone').value = data.phone;
+          if (data.email) card.querySelector('.contact-email').value = data.email;
+        }
+      }
+
+      function setupContactPhotoUpload(card) {
+        const input = card.querySelector('.contact-photo-upload');
+        const preview = card.querySelector('.contact-photo-preview');
+        if (!input || !preview) return;
+        input.addEventListener('change', async function(e) {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async function(ev) {
+            preview.src = ev.target.result;
+            // Supabase Storage'a yükle (opsiyonel — varsa)
+            try {
+              if (window.backendManager) {
+                const ext = file.name.split('.').pop();
+                const path = `contacts/contact-${Date.now()}.${ext}`;
+                const f = file;
+                const { data, error } = await window.backendManager.supabase.storage
+                  .from('transport-images')
+                  .upload(path, f, { upsert: true });
+                if (!error) {
+                  const { data: { publicUrl } } = window.backendManager.supabase.storage
+                    .from('transport-images')
+                    .getPublicUrl(path);
+                  preview.src = publicUrl;
+                  preview.dataset.url = publicUrl;
+                }
+              }
+            } catch(err) {
+              console.warn('Kişi fotoğrafı yükleme hatası (yerel önizleme kullanılıyor):', err);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
       }
 
       function setupOrgLogoUpload(item){
@@ -1040,6 +1436,9 @@
           r.onload = async function(ev){ 
             pv.src = ev.target.result; 
             pv.style.display='block';
+            // Önizlemeyi başlıkta da göster
+            const mini = item.querySelector('.org-mini-logo');
+            if(mini){ mini.src = ev.target.result; mini.style.display = 'block'; }
             
             // Otomatik olarak backend'e kaydet
             try {
@@ -1059,7 +1458,10 @@
                 console.log('✅ Kurum logosu otomatik kaydedildi:', publicUrl);
                 
                 // Cache-busting ile görseli güncelle
-                pv.src = `${publicUrl}?v=${Date.now()}`;
+                pv.src = withSafeCacheBuster(publicUrl);
+                // Mini logo'yu da güncelle
+                const mini = item.querySelector('.org-mini-logo');
+                if(mini){ mini.src = withSafeCacheBuster(publicUrl); mini.style.display = 'block'; }
                 
                 // Başarı mesajı
                 if (window.adminPanel) {
@@ -1109,7 +1511,7 @@
       function removeInstitution(button) {
         const container = document.getElementById('institutionsList');
         if (container.children.length > 1) {
-          button.parentElement.remove();
+          button.closest('.list-item').remove();
         }
       }
       
@@ -1130,9 +1532,112 @@
       function removePartner(button) {
         const container = document.getElementById('partnersList');
         if (container.children.length > 1) {
-          button.parentElement.remove();
+          button.closest('.list-item').remove();
         }
       }
+
+      function escapeHtml(value = '') {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function getReadyTourLinks() {
+        const links = [];
+        const seen = new Set();
+        document.querySelectorAll('#toursList .tour-link').forEach(input => {
+          const link = (input.value || '').trim();
+          if (!link || seen.has(link)) return;
+          seen.add(link);
+          links.push(link);
+        });
+        return links;
+      }
+
+      window.getTourDetailLinkOptions = function(selectedValue = '') {
+        const links = getReadyTourLinks();
+        const selected = String(selectedValue || '').trim();
+        const options = ['<option value="">Tur seçin</option>'];
+        links.forEach(link => {
+          options.push(`<option value="${escapeHtml(link)}" ${link === selected ? 'selected' : ''}>${escapeHtml(link)}</option>`);
+        });
+        if (selected && !links.includes(selected)) {
+          options.push(`<option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)} (Arşiv)</option>`);
+        }
+        if (links.length === 0 && !selected) {
+          options.push('<option value="" disabled>Önce "Hazır Turlar" bölümüne tur ekleyin</option>');
+        }
+        return options.join('');
+      };
+
+      window.updateTourDetailHeader = function(item) {
+        if (!item) return;
+        const select = item.querySelector('.tour-detail-link');
+        const label = item.querySelector('.tour-detail-toggle-label');
+        const title = item.querySelector('.tour-detail-title')?.value?.trim();
+        if (!label) return;
+        const selectedText = select?.selectedOptions?.[0]?.textContent?.trim() || select?.value?.trim() || '';
+        label.textContent = title || selectedText || 'Yeni Tur Detayı';
+      };
+
+      function openTourDetailAccordion(item) {
+        document.querySelectorAll('#tourDetailsList .tour-details-item').forEach(el => {
+          if (el !== item) el.classList.add('collapsed');
+        });
+        if (item) item.classList.remove('collapsed');
+      }
+
+      window.initTourDetailAccordion = function(item, options = {}) {
+        if (!item) return;
+        const shouldOpen = options.open === true;
+        const toggleBtn = item.querySelector('.tour-detail-toggle');
+        const titleInput = item.querySelector('.tour-detail-title');
+        const linkSelect = item.querySelector('.tour-detail-link');
+
+        if (!toggleBtn || toggleBtn.dataset.bound === '1') {
+          if (shouldOpen) openTourDetailAccordion(item);
+          window.updateTourDetailHeader(item);
+          return;
+        }
+
+        toggleBtn.dataset.bound = '1';
+        item.classList.add('collapsed');
+        if (shouldOpen) openTourDetailAccordion(item);
+
+        toggleBtn.addEventListener('click', function() {
+          const isCollapsed = item.classList.contains('collapsed');
+          if (isCollapsed) openTourDetailAccordion(item);
+          else item.classList.add('collapsed');
+        });
+
+        if (titleInput) {
+          titleInput.addEventListener('input', function() {
+            window.updateTourDetailHeader(item);
+          });
+        }
+
+        if (linkSelect) {
+          linkSelect.addEventListener('change', function() {
+            window.updateTourDetailHeader(item);
+            openTourDetailAccordion(item);
+          });
+        }
+
+        window.updateTourDetailHeader(item);
+      };
+
+      window.refreshTourDetailLinkDropdowns = function() {
+        document.querySelectorAll('#tourDetailsList .tour-detail-link').forEach(select => {
+          const selected = (select.value || '').trim();
+          select.innerHTML = window.getTourDetailLinkOptions(selected);
+        });
+        document.querySelectorAll('#tourDetailsList .tour-details-item').forEach(item => {
+          window.updateTourDetailHeader(item);
+        });
+      };
       
       // Tur Ekleme
       function addTour() {
@@ -1148,6 +1653,7 @@
               📁 Tur Görseli Yükle
             </div>
             <img class="tour-image-preview" style="width: 80px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
+            <button type="button" class="btn btn-ghost btn-sm remove-tour-image" style="font-size: 11px;">🗑️ Görseli Sil</button>
           </div>
           <input type="text" placeholder="Tur Detay Linki (örn: kapadokya)" class="tour-link" />
           <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTour(this)">🗑️</button>
@@ -1156,6 +1662,14 @@
         
         // Upload event listener ekle
         setupTourImageUpload(newItem);
+
+        const linkInput = newItem.querySelector('.tour-link');
+        if (linkInput) {
+          linkInput.addEventListener('input', function() {
+            if (window.refreshTourDetailLinkDropdowns) window.refreshTourDetailLinkDropdowns();
+          });
+        }
+        if (window.refreshTourDetailLinkDropdowns) window.refreshTourDetailLinkDropdowns();
       }
       
       // Tur Silme
@@ -1163,6 +1677,7 @@
         const container = document.getElementById('toursList');
         if (container.children.length > 1) {
           button.parentElement.remove();
+          if (window.refreshTourDetailLinkDropdowns) window.refreshTourDetailLinkDropdowns();
         }
       }
       
@@ -1172,106 +1687,147 @@
         const newItem = document.createElement('div');
         newItem.className = 'tour-details-item';
         newItem.innerHTML = `
-          <div class="tour-details-grid">
-            <div class="edit-group">
-              <label>Tur Linki:</label>
-              <input type="text" placeholder="kapadokya" class="tour-detail-link" />
-            </div>
-            <div class="edit-group">
-              <label>Tur Başlığı:</label>
-              <input type="text" placeholder="Kapadokya Kaşifi" class="tour-detail-title" />
-            </div>
-            <div class="edit-group">
-              <label>Tur Alt Başlığı:</label>
-              <input type="text" placeholder="Uçhisar, Göreme ve vadilerin büyüleyici dünyası" class="tour-detail-subtitle" />
-            </div>
+          <div class="tour-detail-accordion-header">
+            <button type="button" class="btn btn-outline btn-sm tour-detail-toggle">
+              <span class="tour-detail-toggle-label">Yeni Tur Detayı</span>
+              <span class="tour-detail-toggle-icon">▾</span>
+            </button>
           </div>
-          <div class="tour-details-grid">
-            <div class="edit-group">
-              <label>Harita Görseli:</label>
-              <div class="file-upload" style="margin-bottom: 8px;">
-                <input type="file" class="tour-detail-mapimage-upload" accept="image/*" />
-                📁 Harita Görseli Yükle
+          <div class="tour-detail-body">
+            <div class="tour-details-grid">
+              <div class="edit-group">
+                <label>Hazır Tur Seçimi:</label>
+                <select class="tour-detail-link">${window.getTourDetailLinkOptions ? window.getTourDetailLinkOptions('') : '<option value="">Tur seçin</option>'}</select>
               </div>
-              <img class="tour-detail-mapimage-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-            </div>
-            <div class="edit-group">
-              <label>Harita Başlığı:</label>
-              <input type="text" placeholder="Kapadokya Haritası" class="tour-detail-maptitle" />
-            </div>
-            <div class="edit-group">
-              <label>Harita Açıklaması:</label>
-              <input type="text" placeholder="Tur güzergahı ve önemli noktalar" class="tour-detail-mapdesc" />
-            </div>
-          </div>
-          <div class="tour-details-grid tour-details-full-width">
-            <div class="edit-group">
-              <label>Tur Görselleri (4 adet):</label>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                <div>
-                  <div class="file-upload" style="margin-bottom: 8px;">
-                    <input type="file" class="tour-detail-image1-upload" accept="image/*" />
-                    📁 Görsel 1
-                  </div>
-                  <img class="tour-detail-image1-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-                </div>
-                <div>
-                  <div class="file-upload" style="margin-bottom: 8px;">
-                    <input type="file" class="tour-detail-image2-upload" accept="image/*" />
-                    📁 Görsel 2
-                  </div>
-                  <img class="tour-detail-image2-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-                </div>
-                <div>
-                  <div class="file-upload" style="margin-bottom: 8px;">
-                    <input type="file" class="tour-detail-image3-upload" accept="image/*" />
-                    📁 Görsel 3
-                  </div>
-                  <img class="tour-detail-image3-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-                </div>
-                <div>
-                  <div class="file-upload" style="margin-bottom: 8px;">
-                    <input type="file" class="tour-detail-image4-upload" accept="image/*" />
-                    📁 Görsel 4
-                  </div>
-                  <img class="tour-detail-image4-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
-                </div>
+              <div class="edit-group">
+                <label>Tur Başlığı:</label>
+                <input type="text" placeholder="Kapadokya Kaşifi" class="tour-detail-title" />
+              </div>
+              <div class="edit-group">
+                <label>Tur Alt Başlığı:</label>
+                <input type="text" placeholder="Uçhisar, Göreme ve vadilerin büyüleyici dünyası" class="tour-detail-subtitle" />
               </div>
             </div>
-          </div>
-          <div class="tour-details-grid tour-details-full-width">
-            <div class="edit-group">
-              <label>Tur Hakkında (Detaylı Açıklama):</label>
-              <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4"></textarea>
+            <div class="tour-details-grid">
+              <div class="edit-group">
+                <label>Harita Görseli:</label>
+                <div class="file-upload" style="margin-bottom: 8px;">
+                  <input type="file" class="tour-detail-mapimage-upload" accept="image/*" />
+                  📁 Harita Görseli Yükle
+                </div>
+                <img class="tour-detail-mapimage-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
+              </div>
+              <div class="edit-group">
+                <label>Harita Başlığı:</label>
+                <input type="text" placeholder="Kapadokya Haritası" class="tour-detail-maptitle" />
+              </div>
+              <div class="edit-group">
+                <label>Harita Açıklaması:</label>
+                <input type="text" placeholder="Tur güzergahı ve önemli noktalar" class="tour-detail-mapdesc" />
+              </div>
             </div>
-            <div class="edit-group">
-              <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
-              <textarea placeholder="🏛️ Tarihi ve kültürel mekanları ziyaret&#10;🍽️ Yerel lezzetleri tatma fırsatı&#10;📸 Profesyonel fotoğraf çekimi&#10;🎁 Anı eşyaları satın alma imkanı" class="tour-detail-highlights" rows="4"></textarea>
+            <div class="tour-details-grid tour-details-full-width">
+              <div class="edit-group">
+                <label>Tur Görselleri:</label>
+                <div class="tour-detail-images" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px;"></div>
+                <button type="button" class="btn btn-outline btn-sm" style="margin-top: 8px;" onclick="window.addTourDetailImage && window.addTourDetailImage(this)">➕ Görsel Ekle</button>
+              </div>
             </div>
-          </div>
-          <div class="tour-details-grid tour-details-full-width">
-            <div class="edit-group">
-              <label>Detaylı Tur Programı (Her satıra bir gün):</label>
-              <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4"></textarea>
+            <div class="tour-details-grid tour-details-full-width">
+              <div class="edit-group">
+                <label>Tur Hakkında (Detaylı Açıklama):</label>
+                <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4"></textarea>
+              </div>
+              <div class="edit-group">
+                <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
+                <textarea placeholder="🏛️ Tarihi ve kültürel mekanları ziyaret&#10;🍽️ Yerel lezzetleri tatma fırsatı&#10;📸 Profesyonel fotoğraf çekimi&#10;🎁 Anı eşyaları satın alma imkanı" class="tour-detail-highlights" rows="4"></textarea>
+              </div>
             </div>
-          </div>
-          <div class="tour-details-actions">
-            <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTourDetail(this)">🗑️ Bu Tur Detayını Sil</button>
+            <div class="tour-details-grid tour-details-full-width">
+              <div class="edit-group">
+                <label>Tur Programı (Her satıra bir gün):</label>
+                <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4"></textarea>
+              </div>
+            </div>
+            <div class="tour-details-actions">
+              <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeTourDetail(this)">🗑️ Bu Tur Detayını Sil</button>
+            </div>
           </div>
         `;
         container.appendChild(newItem);
         
         // Upload event listener'ları ekle
         setupTourDetailUploads(newItem);
+        if (window.initTourDetailAccordion) window.initTourDetailAccordion(newItem, { open: true });
+        if (window.updateTourDetailHeader) window.updateTourDetailHeader(newItem);
       }
       
       // Tur Detay Silme
       function removeTourDetail(button) {
         button.closest('.tour-details-item').remove();
       }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const toursList = document.getElementById('toursList');
+        if (toursList) {
+          const refresh = () => {
+            if (window.refreshTourDetailLinkDropdowns) window.refreshTourDetailLinkDropdowns();
+          };
+          toursList.addEventListener('input', function(e) {
+            if (e.target.classList.contains('tour-link')) refresh();
+          });
+          toursList.addEventListener('change', function(e) {
+            if (e.target.classList.contains('tour-link')) refresh();
+          });
+        }
+        if (window.refreshTourDetailLinkDropdowns) window.refreshTourDetailLinkDropdowns();
+      });
+
+      function normalizeTourId(rawValue = '') {
+        if (typeof window.normalizeTourId === 'function' && window.normalizeTourId !== normalizeTourId) {
+          return window.normalizeTourId(rawValue);
+        }
+        return String(rawValue || '')
+          .toLowerCase()
+          .trim()
+          .replace(/ı/g, 'i')
+          .replace(/ğ/g, 'g')
+          .replace(/ü/g, 'u')
+          .replace(/ş/g, 's')
+          .replace(/ö/g, 'o')
+          .replace(/ç/g, 'c')
+          .replace(/[^a-z0-9-]+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+      }
+
+      function withSafeCacheBuster(url = '') {
+        const cleanUrl = String(url || '').trim();
+        if (!cleanUrl) return '';
+        if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:')) {
+          return cleanUrl.split('?')[0];
+        }
+        return cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`;
+      }
       
       // Tur detay upload fonksiyonları
-      function setupTourDetailUploads(item) {
+      function setupTourDetailUploads(item, detailData = null) {
+        const detailLinkInput = item.querySelector('.tour-detail-link');
+        let activeLinkValue = detailLinkInput?.value?.trim() || '';
+        if (window.updateTourDetailHeader) window.updateTourDetailHeader(item);
+        const applyMapPreviewFromLink = function(linkValue) {
+          if (!mapPreview || !window.backendManager || !linkValue) return;
+          const normalizedId = normalizeTourId(linkValue);
+          const mapImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${normalizedId}/mapImage.png`);
+          mapPreview.onerror = function() {
+            mapPreview.style.display = 'none';
+          };
+          mapPreview.onload = function() {
+            mapPreview.style.display = 'block';
+          };
+          mapPreview.src = withSafeCacheBuster(mapImageUrl);
+        };
+
         // Harita görseli upload
         const mapUpload = item.querySelector('.tour-detail-mapimage-upload');
         const mapPreview = item.querySelector('.tour-detail-mapimage-preview');
@@ -1279,19 +1835,83 @@
           mapUpload.addEventListener('change', function(e) {
             handleTourDetailImageUpload(e, mapPreview, 'mapImage');
           });
-        }
-        
-        // Tur görselleri upload
-        for (let i = 1; i <= 4; i++) {
-          const upload = item.querySelector(`.tour-detail-image${i}-upload`);
-          const preview = item.querySelector(`.tour-detail-image${i}-preview`);
-          if (upload && preview) {
-            upload.addEventListener('change', function(e) {
-              handleTourDetailImageUpload(e, preview, `image${i}`);
-            });
+
+          const detailMapImage = detailData?.mapImage || '';
+          if (detailMapImage) {
+            const cleanMapImage = detailMapImage.startsWith('data:') || detailMapImage.startsWith('blob:')
+              ? detailMapImage.split('?')[0]
+              : detailMapImage;
+            const shouldBustCache = /^https?:\/\//i.test(cleanMapImage) || cleanMapImage.startsWith('/');
+            mapPreview.src = shouldBustCache
+              ? (cleanMapImage.includes('?') ? cleanMapImage : `${cleanMapImage}?v=${Date.now()}`)
+              : cleanMapImage;
+            mapPreview.style.display = 'block';
+          } else if (activeLinkValue && window.backendManager) {
+            applyMapPreviewFromLink(activeLinkValue);
           }
         }
+        
+        // Tur görselleri - event delegation (dinamik öğeler için)
+        const imagesContainer = item.querySelector('.tour-detail-images');
+        if (imagesContainer) {
+          if (imagesContainer.children.length === 0) {
+            if (window.createTourDetailImageSlot) window.createTourDetailImageSlot(imagesContainer, 1);
+          }
+          imagesContainer.addEventListener('change', function(e) {
+            if (e.target.classList.contains('tour-detail-image-upload')) {
+              const idx = parseInt(e.target.getAttribute('data-index')) || 1;
+              const preview = e.target.closest('.tour-detail-image-item').querySelector('.tour-detail-image-preview');
+              if (preview) handleTourDetailImageUpload(e, preview, 'image' + idx);
+            }
+          });
+          imagesContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-tour-detail-image') && imagesContainer.children.length > 1) {
+              const slotItem = e.target.closest('.tour-detail-image-item');
+              // Storage'dan da sil
+              const imgEl = slotItem?.querySelector('.tour-detail-image-preview');
+              if (imgEl && imgEl.src && !imgEl.src.startsWith('data:') && window.backendManager) {
+                const src = imgEl.src.split('?')[0];
+                const match = src.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
+                if (match) window.backendManager.deleteImage(match[1], match[2]).catch(() => {});
+              }
+              slotItem.remove();
+            }
+          });
+          // Mevcut tur için storage'dan görselleri yükle
+          if (activeLinkValue && window.loadTourDetailImagesFromStorage) {
+            window.loadTourDetailImagesFromStorage(item, activeLinkValue, detailData?.images || []);
+          }
+        }
+
+        if (detailLinkInput) {
+          detailLinkInput.addEventListener('change', function() {
+            const updatedLink = detailLinkInput.value.trim();
+            if (updatedLink === activeLinkValue) return;
+            activeLinkValue = updatedLink;
+            if (window.loadTourDetailImagesFromStorage) {
+              window.loadTourDetailImagesFromStorage(item, updatedLink);
+            }
+            if (window.updateTourDetailHeader) window.updateTourDetailHeader(item);
+            if (mapPreview) {
+              mapPreview.src = '';
+              mapPreview.style.display = 'none';
+            }
+            if (window.backendManager) {
+              applyMapPreviewFromLink(updatedLink);
+            }
+          });
+        }
       }
+      
+      window.addTourDetailImage = function(btn) {
+        const item = btn.closest('.tour-details-item');
+        const container = item?.querySelector('.tour-detail-images');
+        if (!container) return;
+        const items = container.querySelectorAll('.tour-detail-image-item');
+        const indices = Array.from(items).map(el => parseInt(el.getAttribute('data-index')) || 0);
+        const nextIdx = indices.length > 0 ? Math.max(...indices) + 1 : 1;
+        if (window.createTourDetailImageSlot) window.createTourDetailImageSlot(container, nextIdx);
+      };
       
       function handleTourDetailImageUpload(event, previewElement, imageType) {
         const file = event.target.files[0];
@@ -1314,7 +1934,7 @@
       async function saveTourDetailImage(link, imageType, imageData) {
         try {
           // Tur ID'si link'ten al (URL-safe hale getir)
-          const tourId = link.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const tourId = normalizeTourId(link);
           const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, imageType);
           console.log(`✅ Tur detay görseli backend'e yüklendi (${tourId}/${imageType}):`, publicUrl);
           return publicUrl;
@@ -1328,9 +1948,24 @@
       function setupTourImageUpload(item) {
         const upload = item.querySelector('.tour-image-upload');
         const preview = item.querySelector('.tour-image-preview');
+        const removeBtn = item.querySelector('.remove-tour-image');
         if (upload && preview) {
           upload.addEventListener('change', function(e) {
             handleTourImageUpload(e, preview);
+          });
+        }
+        if (removeBtn) {
+          removeBtn.addEventListener('click', function() {
+            const tourItem = removeBtn.closest('.list-item');
+            const link = tourItem?.querySelector('.tour-link')?.value?.trim();
+            if (link && window.backendManager) {
+              const tourId = link.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+              window.backendManager.deleteImage('tour-images', `tours/${tourId}/main.png`).catch(() => {});
+            }
+            if (preview) {
+              preview.src = '';
+              preview.style.display = 'none';
+            }
           });
         }
       }
@@ -1509,76 +2144,39 @@
         }, { offset: Number.NEGATIVE_INFINITY }).element;
       }
       
-      // Kurum Açıklama Ekleme
-      function addOrgDescription(data) {
-        const container = document.getElementById('orgDescriptionsList');
-        if (!container) return;
-        
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.style.display = 'grid';
-        item.style.gridTemplateColumns = '200px 1fr auto';
-        item.style.gap = '12px';
-        item.style.alignItems = 'start';
-        
-        item.innerHTML = `
-          <input type="text" placeholder="Kurum Adı" class="org-desc-name" value="${data ? data.name : ''}" />
-          <textarea placeholder="Kurum hakkında açıklama yazın..." class="org-desc-text" rows="3">${data ? data.description : ''}</textarea>
-          <button type="button" class="btn btn-ghost btn-sm remove-item" onclick="removeOrgDescription(this)">🗑️</button>
-        `;
-        
-        container.appendChild(item);
-      }
-      
-      // Kurum Açıklama Silme
-      function removeOrgDescription(button) {
-        const container = document.getElementById('orgDescriptionsList');
-        if (container.children.length > 0) {
-          button.parentElement.remove();
+      // Kurumları Senkronize Et (artık dropdown'u günceller)
+      function syncOrgDescriptions(options = {}) {
+        const silent = options.silent === true;
+        // Mevcut textarea değerini kaydet
+        saveCurrentOrgDescription();
+        // Dropdown'u güncelle
+        refreshOrgDescDropdown();
+        if (!silent) {
+          const select = document.getElementById('orgDescDropdown');
+          const count = select ? select.options.length - 1 : 0;
+          if (count > 0) alert(`${count} kurum dropdown'a senkronize edildi!`);
         }
       }
-      
-      // Kurumları Senkronize Et
-      function syncOrgDescriptions() {
-        const orgsContainer = document.getElementById('transportOrgsList');
-        const descriptionsContainer = document.getElementById('orgDescriptionsList');
-        
-        if (!orgsContainer || !descriptionsContainer) return;
-        
-        // Mevcut açıklamaları al
-        const existingDescriptions = {};
-        const existingItems = descriptionsContainer.querySelectorAll('.list-item');
-        existingItems.forEach(item => {
-          const name = item.querySelector('.org-desc-name')?.value.trim();
-          const desc = item.querySelector('.org-desc-text')?.value.trim();
-          if (name) {
-            existingDescriptions[name] = desc || '';
+
+      // Eski uyumluluk için (admin.js'den çağrılıyor)
+      function addOrgDescription(data) {
+        if (!data || !data.name) return;
+        const name = data.name || data.orgName || '';
+        const desc = data.description || '';
+        if (name) {
+          window.orgDescriptionsStore[name] = desc;
+          // Dropdown'a seçenek ekle (eğer yoksa)
+          const select = document.getElementById('orgDescDropdown');
+          if (select) {
+            const exists = Array.from(select.options).some(o => o.value === name);
+            if (!exists) {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              select.appendChild(opt);
+            }
           }
-        });
-        
-        // Kurumları al
-        const orgItems = orgsContainer.querySelectorAll('.list-item');
-        const orgNames = [];
-        orgItems.forEach(item => {
-          const name = item.querySelector('.org-name')?.value.trim();
-          if (name) {
-            orgNames.push(name);
-          }
-        });
-        
-        // Açıklama listesini temizle ve yeniden oluştur
-        descriptionsContainer.innerHTML = '';
-        
-        // Her kurum için açıklama alanı oluştur
-        orgNames.forEach(orgName => {
-          addOrgDescription({
-            name: orgName,
-            description: existingDescriptions[orgName] || ''
-          });
-        });
-        
-        // Başarı mesajı göster
-        alert(`${orgNames.length} kurum senkronize edildi!`);
+        }
       }
 
       // Sayfa yüklendiğinde mevcut öğelere drag & drop ekle

@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
@@ -79,6 +79,14 @@
               </div>
             </div>
 
+            <!-- Yetkili Kişiler -->
+            <div class="org-contacts-section" id="orgContactsSection" style="display:none;">
+              <h3>Yetkili Kişiler</h3>
+              <div id="orgContactsList" class="org-contacts-list">
+                <!-- Dinamik kişi kartları buraya eklenecek -->
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -103,11 +111,8 @@
     </footer>
 
     <!-- Developer Signature -->
-    <div class="dev-signature">koramaz</div>
+    <a class="dev-signature" href="https://mail.google.com/mail/?view=cm&to=koramazomerfaruk@gmail.com" target="_blank" rel="noopener" title="koramazomerfaruk@gmail.com">koramaz</a>
 
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/admin.js"></script>
-    
     <script>
       // Sayfa yüklendiğinde kurum bilgilerini yükle
       document.addEventListener('DOMContentLoaded', function() {
@@ -152,7 +157,6 @@
         document.getElementById('orgName').textContent = org.name;
         document.title = `${org.name} - Sakarya Orion Turizm`;
         
-        
         // Logo
         const logoElement = document.getElementById('orgLogo');
         if (org.logo_url) {
@@ -169,6 +173,9 @@
         
         // Butonları oluştur
         createOrgButtons(org);
+
+        // Yetkili kişileri oluştur
+        createOrgContacts(org);
       }
 
       async function getOrgDescription(orgName, orgType) {
@@ -190,67 +197,102 @@
       function createOrgButtons(org) {
         const buttonsContainer = document.getElementById('orgButtons');
         buttonsContainer.innerHTML = '';
-        
-        // Buton bilgileri
-        const buttons = [
-          {
-            key: 'contract_url',
-            label: '📄 Sözleşme İndir',
-            className: 'btn btn-outline',
-            condition: org.contract_url
-          },
-          {
-            key: 'vita_web_url', 
-            label: '🌐 Vita Web Paneli',
-            className: 'btn btn-outline',
-            condition: org.vita_web_url
-          },
-          {
-            key: 'vita_app_url',
-            label: '📱 Vita Uygulaması',
-            className: 'btn btn-outline', 
-            condition: org.vita_app_url
-          },
-          {
-            key: 'payment_url',
-            label: '💳 Ödeme Yap',
-            className: 'btn btn-primary',
-            condition: org.payment_url
-          }
-        ];
-        
+
+        let buttons = [];
+
+        if (org.description) {
+          const raw = org.description.trim();
+          try {
+            const parsed = JSON.parse(raw);
+            // Yeni format: { v: 2, buttons: [...], text: "..." }
+            if (parsed && parsed.v === 2 && Array.isArray(parsed.buttons)) {
+              buttons = parsed.buttons;
+            }
+            // Eski format: doğrudan dizi [...]
+            else if (Array.isArray(parsed)) {
+              buttons = parsed;
+            }
+          } catch(e) { /* ham metin, buton yok */ }
+        }
+
+        // Geriye dönük uyumluluk: hiç buton yoksa eski sabit URL sütunlarına bak
+        if (!buttons.length) {
+          const legacy = [
+            { label: '📄 Sözleşme İndir', url: org.contract_url, style: 'outline' },
+            { label: '🌐 Vita Web Paneli',  url: org.vita_web_url,  style: 'outline' },
+            { label: '📱 Vita Uygulaması',  url: org.vita_app_url,  style: 'outline' },
+            { label: '💳 Ödeme Yap',        url: org.payment_url,  style: 'primary'  },
+          ];
+          buttons = legacy.filter(b => b.url);
+        }
+
         // Butonları oluştur
         buttons.forEach(buttonInfo => {
-          if (buttonInfo.condition) {
-            const button = document.createElement('a');
-            let url = org[buttonInfo.key];
-            
-            // URL'yi düzelt - protokol yoksa https:// ekle
-            if (url && !url.match(/^https?:\/\//)) {
-              url = 'https://' + url;
-            }
-            
-            button.href = url;
-            button.target = '_blank';
-            button.rel = 'noopener noreferrer';
-            button.className = buttonInfo.className;
-            button.textContent = buttonInfo.label;
-            buttonsContainer.appendChild(button);
-          }
+          if (!buttonInfo.url) return;
+          const button = document.createElement('a');
+          let url = buttonInfo.url;
+          if (url && !url.match(/^https?:\/\//)) url = 'https://' + url;
+          button.href = url;
+          button.target = '_blank';
+          button.rel = 'noopener noreferrer';
+          button.className = `btn btn-${buttonInfo.style || 'outline'}`;
+          button.textContent = buttonInfo.label || 'Link';
+          buttonsContainer.appendChild(button);
         });
-        
+
         // Hiç buton yoksa bilgi mesajı göster
         if (buttonsContainer.children.length === 0) {
           buttonsContainer.innerHTML = '<p class="muted">Bu kurum için henüz hizmet linkleri eklenmemiş.</p>';
         }
       }
 
+      function createOrgContacts(org) {
+        const section = document.getElementById('orgContactsSection');
+        const list    = document.getElementById('orgContactsList');
+        if (!section || !list) return;
+
+        let contacts = [];
+        if (org.description) {
+          try {
+            const parsed = JSON.parse(org.description.trim());
+            if (parsed && parsed.v === 2 && Array.isArray(parsed.contacts)) {
+              contacts = parsed.contacts.filter(c => c.name || c.phone);
+            }
+          } catch(e) {}
+        }
+
+        if (contacts.length === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        list.innerHTML = '';
+
+        contacts.forEach(function(c) {
+          const card = document.createElement('div');
+          card.className = 'org-contact-display-card';
+
+          const defaultPhoto = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='100' viewBox='0 0 80 100'%3E%3Crect width='80' height='100' fill='%23e5e7eb' rx='8'/%3E%3Ccircle cx='40' cy='35' r='18' fill='%239ca3af'/%3E%3Cellipse cx='40' cy='80' rx='28' ry='22' fill='%239ca3af'/%3E%3C/svg%3E";
+
+          card.innerHTML = `
+            <img class="contact-display-photo"
+              src="${c.photo || defaultPhoto}"
+              alt="${c.name || 'Yetkili'}"
+              onerror="this.src='${defaultPhoto}'" />
+            <div class="contact-display-info">
+              ${c.name  ? `<p class="contact-display-name">${c.name}</p>` : ''}
+              ${c.title ? `<p class="contact-display-title">${c.title}</p>` : ''}
+              ${c.phone ? `<a class="contact-display-item" href="tel:${c.phone}">📞 ${c.phone}</a>` : ''}
+              ${c.email ? `<a class="contact-display-item" href="mailto:${c.email}">✉️ ${c.email}</a>` : ''}
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+
     </script>
 
-    <!-- Supabase CDN -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <script src="assets/js/supabase-config.js"></script>
     </div> <!-- End page-content -->
 
     <!-- Supabase CDN -->
@@ -259,6 +301,7 @@
     <script src="assets/js/supabase-config.js"></script>
     <script src="assets/js/preloader.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/admin.js"></script>
   </body>
 </html>
 
