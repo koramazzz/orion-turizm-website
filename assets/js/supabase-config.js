@@ -1099,10 +1099,10 @@
           throw new Error('Geçersiz dosya tipi. Sadece JPG, PNG, WebP ve GIF desteklenir.');
         }
 
-        // Dosya boyutunu kontrol et (5MB limit)
-        const maxSize = 5 * 1024 * 1024; // 5MB
+        // Dosya boyutunu kontrol et (12MB limit)
+        const maxSize = 12 * 1024 * 1024; // 12MB
         if (file.size > maxSize) {
-          throw new Error('Dosya boyutu çok büyük. Maksimum 5MB olmalıdır.');
+          throw new Error('Dosya boyutu çok büyük. Maksimum 12MB olmalıdır.');
         }
 
         // Mevcut dosyayı sil (varsa) - sadece ilk denemede
