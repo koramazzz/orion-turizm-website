@@ -780,23 +780,111 @@
     }
   }
 
-  // Fotoğraf modalı fonksiyonu
-  window.openImageModal = function(imageSrc) {
-    var modal = document.getElementById('imageModal');
+  // Fotoğraf modalı durumu (yan oklarla gezme için)
+  var modalGalleryImages = [];
+  var modalCurrentIndex = -1;
+
+  function showModalImageAt(index) {
     var modalImage = document.getElementById('modalImage');
-    if(modal && modalImage) {
-      modalImage.src = imageSrc;
+    if (!modalImage || !modalGalleryImages.length) return;
+    var safeIndex = (index + modalGalleryImages.length) % modalGalleryImages.length;
+    modalCurrentIndex = safeIndex;
+    modalImage.src = modalGalleryImages[safeIndex];
+  }
+
+  function closeImageModal() {
+    var modal = document.getElementById('imageModal');
+    if (!modal) return;
+    modal.setAttribute('aria-hidden', 'true');
+    var modalImage = modal.querySelector('#modalImage');
+    if (modalImage) modalImage.removeAttribute('src');
+    document.body.style.overflow = '';
+    modalGalleryImages = [];
+    modalCurrentIndex = -1;
+  }
+
+  function getMapImageSrc(mapEl) {
+    if (!mapEl) return '';
+    var datasetUrl = (mapEl.dataset && mapEl.dataset.mapImageUrl) ? mapEl.dataset.mapImageUrl : '';
+    if (datasetUrl) return datasetUrl;
+
+    var bgVar = '';
+    try {
+      bgVar = getComputedStyle(mapEl).getPropertyValue('--bg') || '';
+    } catch (err) {}
+    var fromVar = bgVar.match(/url\((['"]?)(.*?)\1\)/i);
+    if (fromVar && fromVar[2]) return fromVar[2];
+
+    var bgImage = '';
+    try {
+      bgImage = getComputedStyle(mapEl).backgroundImage || '';
+    } catch (err) {}
+    var fromBg = bgImage.match(/url\((['"]?)(.*?)\1\)/i);
+    return (fromBg && fromBg[2]) ? fromBg[2] : '';
+  }
+
+  // Fotoğraf modalı fonksiyonu
+  window.openImageModal = function(imageSrc, imageList, imageIndex) {
+    var modal = document.getElementById('imageModal');
+    if(modal && imageSrc) {
+      var gallery = Array.isArray(imageList) && imageList.length ? imageList : [imageSrc];
+      modalGalleryImages = gallery;
+      modalCurrentIndex = typeof imageIndex === 'number' ? imageIndex : gallery.indexOf(imageSrc);
+      if (modalCurrentIndex < 0) modalCurrentIndex = 0;
+      showModalImageAt(modalCurrentIndex);
       modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
     }
   };
+
+  // Galeri görsellerine tek yerden tıklama davranışı ekle
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!(target instanceof HTMLImageElement) || !target.closest('#tourGallery')) return;
+    var galleryImages = Array.from(document.querySelectorAll('#tourGallery img'))
+      .map(function(img) { return img.src; })
+      .filter(Boolean);
+    var currentIndex = galleryImages.indexOf(target.src);
+    window.openImageModal(target.src, galleryImages, currentIndex);
+  });
+
+  // Harita görselini ayrı olarak aç (galeri geçişine dahil etme)
+  document.addEventListener('click', function(e) {
+    var mapEl = e.target.closest('#mapImage');
+    if (!mapEl) return;
+    var mapSrc = getMapImageSrc(mapEl);
+    if (!mapSrc || typeof window.openImageModal !== 'function') return;
+    window.openImageModal(mapSrc, [mapSrc], 0);
+  });
 
   // Modal kapatma fonksiyonu
   document.addEventListener('click', function(e) {
     if(e.target.hasAttribute('data-close')) {
       var modal = e.target.closest('.modal');
-      if(modal) {
-        modal.setAttribute('aria-hidden', 'true');
-      }
+      if (modal && modal.id === 'imageModal') closeImageModal();
+    }
+  });
+
+  // ESC ile kapat, yan oklarla galeri içinde ilerle
+  document.addEventListener('keydown', function(e) {
+    var modal = document.getElementById('imageModal');
+    var isImageModalOpen = modal && modal.getAttribute('aria-hidden') === 'false';
+    if (!isImageModalOpen) return;
+
+    if (e.key === 'Escape') {
+      closeImageModal();
+      return;
+    }
+
+    if (e.key === 'ArrowRight' && modalGalleryImages.length > 1) {
+      e.preventDefault();
+      showModalImageAt(modalCurrentIndex + 1);
+      return;
+    }
+
+    if (e.key === 'ArrowLeft' && modalGalleryImages.length > 1) {
+      e.preventDefault();
+      showModalImageAt(modalCurrentIndex - 1);
     }
   });
 

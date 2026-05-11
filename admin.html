@@ -1997,8 +1997,12 @@
       
       async function saveTourImage(tourName, tourLink, imageData, previewElement) {
         try {
-          // Tur ID'si olarak link kullan (zaten URL-safe)
-          const tourId = tourLink;
+          // Tur ID'sini storage için güvenli hale getir
+          const tourId = normalizeTourId(tourLink);
+          if (!tourId) {
+            alert('Geçersiz tur linki. Lütfen link alanını kontrol edin.');
+            return;
+          }
           const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, 'main');
           console.log(`✅ Tur görseli backend'e yüklendi (${tourId}):`, publicUrl);
           

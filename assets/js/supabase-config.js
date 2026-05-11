@@ -1274,6 +1274,26 @@
   }
 
   /**
+   * Storage path segment'ini güvenli hale getir
+   * @param {string} rawValue
+   * @returns {string}
+   */
+  normalizePathSegment(rawValue = '') {
+    return String(rawValue || '')
+      .toLowerCase()
+      .trim()
+      .replace(/ı/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  /**
    * Logo yükle (wrapper)
    * @param {File|string} fileOrBase64 - File objesi veya base64 string
    * @param {string} type - Logo tipi (header, content, about)
@@ -1383,7 +1403,13 @@
         file = this.base64ToFile(fileOrBase64, `${tourId}-${imageType}.png`);
       }
 
-      const path = `tours/${tourId}/${imageType}.png`;
+      const safeTourId = this.normalizePathSegment(tourId);
+      if (!safeTourId) {
+        throw new Error('Geçersiz tur linki. Lütfen sadece harf, sayı ve tire içeren bir link girin.');
+      }
+
+      const safeImageType = this.normalizePathSegment(imageType) || 'main';
+      const path = `tours/${safeTourId}/${safeImageType}.png`;
       return await this.uploadImage(file, 'tour-images', path, {
         imageType: 'tour',
         referenceId: null  // Tour ID string olduğu için null gönder (UUID bekleniyor)
