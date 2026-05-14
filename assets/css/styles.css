@@ -768,6 +768,59 @@ a{color:inherit;text-decoration:none}
   .tour-gallery-scroll img{flex:0 0 calc(100% - 0px);width:100%;height:200px}
 }
 
+/* Tour image lightbox */
+#imageModal .image-modal-card{
+  width:min(860px,88vw);
+  max-height:82vh;
+  padding:12px;
+  background:rgba(22,22,24,.98);
+  border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,.45);
+  overflow:hidden;
+}
+
+#imageModal .image-modal-close{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:2;
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,.2);
+  color:#fff;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+}
+
+#imageModal .image-modal-close:hover{
+  background:rgba(255,255,255,.32);
+}
+
+#imageModal .image-modal-viewport{
+  width:100%;
+  max-width:100%;
+  max-height:calc(82vh - 24px);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#imageModal #modalImage{
+  display:block;
+  width:auto;
+  max-width:100%;
+  height:auto;
+  max-height:calc(82vh - 40px);
+  object-fit:contain;
+  border-radius:10px;
+  margin:auto;
+}
+
 /* Responsive breakpoints */
 @media (min-width: 1200px) {
   .logo-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
@@ -987,6 +1040,17 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
 .modal[aria-hidden="false"]{display:flex}
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .modal-card{position:relative;background:#fff;border-radius:16px;padding:20px;min-width:min(520px,94%);box-shadow:0 12px 32px rgba(0,0,0,.16)}
+.image-modal-card{overflow:auto}
+.image-modal-viewport{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:90vw;
+  max-height:90vh;
+  overflow:auto;
+  padding:8px;
+}
 .modal-actions{display:flex;gap:12px;margin-top:12px}
 .modal-close{position:absolute;right:12px;top:8px;border:0;background:transparent;font-size:24px;cursor:pointer}
 
@@ -1059,6 +1123,10 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
   padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+
+#mapImage{
+  cursor: zoom-in;
 }
 
 .tour-description {

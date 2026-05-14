@@ -1235,7 +1235,7 @@ class AdminPanel {
 
     // Backend'den gelen turları ekle
     toursArray.forEach(tour => {
-      const tourId = tour.link || tour.id;
+      const tourId = window.normalizeTourId(tour.link || tour.id);
       // Supabase Storage'dan görsel URL'i al (cache-busting ile)
       const imageUrl = window.backendManager 
         ? `${window.backendManager.getImageUrl('tour-images', `tours/${tourId}/main.png`)}?v=${Date.now()}`
@@ -2019,7 +2019,7 @@ class ContentUpdater {
       if (toursGrid && tourData.length > 0) {
         toursGrid.innerHTML = '';
         tourData.forEach(tour => {
-          const tourId = tour.link || tour.id;
+          const tourId = window.normalizeTourId(tour.link || tour.id);
           // Supabase Storage'dan görsel URL'i al (cache-busting ile)
           const imageSrc = window.backendManager 
             ? `${window.backendManager.getImageUrl('tour-images', `tours/${tourId}/main.png`)}?v=${Date.now()}`
@@ -2429,7 +2429,7 @@ class ContentUpdater {
       // Her tur için görsel yükle (Promise.all ile bekle)
       await Promise.all(tours.map(async (tour) => {
         try {
-          const tourId = tour.link || tour.id;
+          const tourId = window.normalizeTourId(tour.link || tour.id);
           const mainImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${tourId}/main.png`);
           
           // Tur kartını bul (turlar.html'de)
@@ -2514,6 +2514,7 @@ class ContentUpdater {
       const mapImageEl = document.getElementById('mapImage');
       if (mapImageEl) {
         mapImageEl.style.setProperty('--bg', `url('${mapImageUrl}')`);
+        mapImageEl.dataset.mapImageUrl = mapImageUrl;
       }
 
       // Tur fotoğraflarını güncelle (tourDetail.images varsa onu kullan, yoksa storage'dan probe)
@@ -2529,7 +2530,12 @@ class ContentUpdater {
           const img = document.createElement('img');
           img.src = window.withSafeCacheBuster(url);
           img.alt = `Tur Fotoğrafı ${i + 1}`;
-          img.onclick = function() { if (typeof openImageModal === 'function') openImageModal(this.src); };
+          img.onclick = function() {
+            if (typeof openImageModal === 'function') {
+              const gallerySources = imageUrls.map((imageUrl) => window.withSafeCacheBuster(imageUrl));
+              openImageModal(this.src, gallerySources, i);
+            }
+          };
           galleryEl.appendChild(img);
         });
         ContentUpdater.addScrollButtons('#tourGallery', '#tourGalleryScrollLeft', '#tourGalleryScrollRight', true);
