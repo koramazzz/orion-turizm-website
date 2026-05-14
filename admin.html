@@ -1455,7 +1455,6 @@
               
               if (window.backendManager) {
                 const publicUrl = await window.backendManager.uploadTransportOrgLogo(ev.target.result, orgId);
-                console.log('✅ Kurum logosu otomatik kaydedildi:', publicUrl);
                 
                 // Cache-busting ile görseli güncelle
                 pv.src = withSafeCacheBuster(publicUrl);
@@ -1735,8 +1734,8 @@
             </div>
             <div class="tour-details-grid tour-details-full-width">
               <div class="edit-group">
-                <label>Tur Hakkında (Detaylı Açıklama):</label>
-                <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4"></textarea>
+                <label>Gezi Noktaları (Her satıra bir madde):</label>
+                <textarea placeholder="Gelibolu&#10;Çanakkale Şehitler Abidesi&#10;Truva Antik Kenti" class="tour-detail-description" rows="4"></textarea>
               </div>
               <div class="edit-group">
                 <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
@@ -1745,8 +1744,8 @@
             </div>
             <div class="tour-details-grid tour-details-full-width">
               <div class="edit-group">
-                <label>Tur Programı (Her satıra bir gün):</label>
-                <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4"></textarea>
+                <label>Tur Programı (Her satıra bir madde):</label>
+                <textarea placeholder="Uçhisar - Göreme Açık Hava Müzesi&#10;Vadiler - Avanos seramik atölyesi&#10;Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4"></textarea>
               </div>
             </div>
             <div class="tour-details-actions">
@@ -1936,7 +1935,6 @@
           // Tur ID'si link'ten al (URL-safe hale getir)
           const tourId = normalizeTourId(link);
           const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, imageType);
-          console.log(`✅ Tur detay görseli backend'e yüklendi (${tourId}/${imageType}):`, publicUrl);
           return publicUrl;
         } catch (error) {
           console.error('Tur detay görsel yükleme hatası:', error);
@@ -2000,7 +1998,6 @@
           // Tur ID'si olarak link kullan (zaten URL-safe)
           const tourId = tourLink;
           const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, 'main');
-          console.log(`✅ Tur görseli backend'e yüklendi (${tourId}):`, publicUrl);
           
           // Cache-busting ile önizlemeyi güncelle
           setTimeout(() => {

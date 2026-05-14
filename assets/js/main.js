@@ -11,7 +11,6 @@
 
   // Backend verilerini yükle ve sayfayı güncelle
   async function loadBackendData() {
-    console.log('🔍 Backend veri yükleme başlatılıyor...');
     
     if (!window.preloader || !window.preloader.isInitialized) {
       console.warn('⚠️ Preloader henüz hazır değil');
@@ -20,24 +19,18 @@
 
     try {
       // Site içeriklerini al
-      console.log('📥 Site içerikleri yükleniyor...');
       const siteContent = await window.preloader.getCachedData('siteContent');
-      console.log('📊 Site içerikleri:', siteContent);
       
       if (siteContent) {
-        console.log('✅ Site içerikleri bulundu, sayfa güncelleniyor...');
         updatePageWithSiteContent(siteContent);
       } else {
         console.warn('⚠️ Site içerikleri bulunamadı');
       }
 
       // Taşımacılık kurumlarını al
-      console.log('🚌 Taşımacılık kurumları yükleniyor...');
       const transportOrgs = await window.preloader.getCachedData('transportOrgs');
-      console.log('🏢 Taşımacılık kurumları:', transportOrgs);
       
       if (transportOrgs && transportOrgs.length > 0) {
-        console.log('✅ Taşımacılık kurumları bulundu, seçim modalları güncelleniyor...');
         populateOrgSelects(transportOrgs);
       } else {
         console.warn('⚠️ Taşımacılık kurumları bulunamadı');
@@ -93,7 +86,6 @@
 
   // Site içeriklerini sayfaya uygula
   function updatePageWithSiteContent(content) {
-    console.log('🔄 Site içerikleri sayfaya uygulanıyor...');
     
     // Carousel görsellerini güncelle
     const carousel = document.querySelector('.carousel');
@@ -122,7 +114,6 @@
       });
     } else {
       // Header logo yoksa backend storage'dan yükle
-      console.log('🔄 Header logo backend storage\'dan yükleniyor...');
       loadHeaderLogoFromStorage();
     }
 
@@ -135,7 +126,6 @@
       });
     } else {
       // Content logo yoksa backend storage'dan yükle
-      console.log('🔄 Content logo backend storage\'dan yükleniyor...');
       loadContentLogoFromStorage();
     }
 
@@ -187,7 +177,6 @@
       });
     } else {
       // About image yoksa backend storage'dan yükle
-      console.log('🔄 About image backend storage\'dan yükleniyor...');
       loadAboutImageFromStorage();
     }
   }
@@ -346,27 +335,19 @@
 
   // Preloader hazır olduğunda verileri yükle
   function waitForPreloader() {
-    console.log('⏳ Preloader durumu kontrol ediliyor...');
-    console.log('🔍 window.preloader:', window.preloader);
-    console.log('🔍 isInitialized:', window.preloader ? window.preloader.isInitialized : 'undefined');
     
     if (window.preloader && window.preloader.isInitialized) {
-      console.log('✅ Preloader hazır, backend verileri yükleniyor...');
       loadBackendData();
       // İçerik sonrası header logosu yoksa yedeği dene
       ensureHeaderLogoFallback();
       ensureContentLogoFallback();
     } else {
-      console.log('⏳ Preloader henüz hazır değil, 100ms bekleniyor...');
       setTimeout(waitForPreloader, 100);
     }
   }
 
   // Sayfa yüklendiğinde backend verilerini yükle
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM yüklendi, backend verileri yükleniyor...');
-    console.log('🔍 Supabase durumu:', window.supabase);
-    console.log('🔍 Preloader durumu:', window.preloader);
     
     waitForPreloader();
     
@@ -698,14 +679,14 @@
           'https://images.unsplash.com/photo-1516542076529-1ea3854896e1?q=80&w=800&auto=format&fit=crop',
           'https://images.unsplash.com/photo-1506905925346-14b1e0d35b47?q=80&w=800&auto=format&fit=crop'
         ],
-        description: 'Kapadokya\'nın eşsiz peri bacaları, yeraltı şehirleri ve tarihi kiliseleriyle dolu bu tur, sizi büyüleyici bir yolculuğa çıkarıyor.',
+        description: 'Göreme Açık Hava Müzesi\nUçhisar Kalesi\nAvanos seramik atölyeleri',
         highlights: [
           '🏛️ Göreme Açık Hava Müzesi ziyareti',
           '🏰 Uçhisar Kalesi manzara noktası',
           '🏺 Avanos seramik atölyesi deneyimi',
           '🎈 Balon turu opsiyonu (ek ücret)'
         ],
-        itinerary:['Gün 1: Uçhisar – Göreme Açık Hava Müzesi','Gün 2: Vadiler – Avanos seramik atölyesi','Gün 3: Serbest zaman ve dönüş']
+        itinerary:['Uçhisar - Göreme Açık Hava Müzesi','Vadiler - Avanos seramik atölyesi','Serbest zaman ve dönüş']
       }
     };
   }
@@ -747,7 +728,17 @@
     // Tur açıklaması
     var description = document.getElementById('tourDescription');
     if(description && tour.description) {
-      description.textContent = tour.description;
+      var descriptionLines = String(tour.description).split('\n').map(function(line) {
+        return line.trim();
+      }).filter(Boolean);
+      description.innerHTML = '';
+      descriptionLines.forEach(function(line, index) {
+        var li = document.createElement('li');
+        li.style.padding = '8px 0';
+        if (index < descriptionLines.length - 1) li.style.borderBottom = '1px solid #eee';
+        li.textContent = line;
+        description.appendChild(li);
+      });
     }
     
     // Tur öne çıkan özellikleri
@@ -769,8 +760,7 @@
       itin.innerHTML = ''; 
       tour.itinerary.forEach(function(item){ 
         var li=document.createElement('li'); 
-        var dayContent = (item.replace(/^Gün \d+:\s*/i, '').trim()) || item;
-        li.textContent = 'Gün: ' + dayContent; 
+        li.textContent = item; 
         li.style.padding = '12px 0';
         li.style.borderBottom = '1px solid #f0f0f0';
         li.style.fontSize = '1.1rem';
@@ -856,7 +846,6 @@
               img.src = headerLogoUrl;
             };
           });
-          console.log('✅ Header logo backend storage\'dan yüklendi');
         } else {
           console.warn('⚠️ Header logo backend storage\'da bulunamadı');
         }
@@ -886,7 +875,6 @@
               img.src = contentLogoUrl;
             };
           });
-          console.log('✅ Content logo backend storage\'dan yüklendi');
         } else {
           console.warn('⚠️ Content logo backend storage\'da bulunamadı');
         }
@@ -914,7 +902,6 @@
       for (const path of possiblePaths) {
         try {
           const aboutImageUrl = window.backendManager.getImageUrl('site-images', path);
-          console.log(`🔍 About image path deneniyor: ${path} -> ${aboutImageUrl}`);
           
           const response = await fetch(aboutImageUrl, { method: 'HEAD' });
           if (response.ok) {
@@ -922,14 +909,11 @@
             aboutVisuals.forEach(visual => {
               visual.style.setProperty('--bg', `url('${aboutImageUrl}${cacheBuster}')`);
             });
-            console.log(`✅ About image backend storage'dan yüklendi: ${path}`);
             found = true;
             break;
           } else {
-            console.log(`⚠️ About image bulunamadı: ${path} (${response.status})`);
           }
         } catch (error) {
-          console.log(`❌ About image path hatası: ${path}`, error.message);
         }
       }
       
@@ -976,7 +960,6 @@
       
       if (images.length > 0) {
         carousel.setAttribute('data-images', JSON.stringify(images));
-        console.log(`✅ ${images.length} adet carousel görseli yüklendi`);
         
         // Carousel'i yeniden başlat
         initializeCarousel();
@@ -1014,7 +997,6 @@
         return;
       }
       
-      console.log('🎠 Carousel başlatılıyor:', images.length, 'görsel');
       
       // Görselleri önceden yükle (beyaz flash önleme)
       images.forEach(url => {
@@ -1067,7 +1049,6 @@
         renderCarousel();
       }, 4000);
       
-      console.log('✅ Carousel başarıyla başlatıldı');
       
     } catch (error) {
       console.error('❌ Carousel başlatma hatası:', error);
@@ -1320,252 +1301,5 @@
   // Popup fonksiyonlarını global olarak erişilebilir yap
   window.closeSitePopup = closeSitePopup;
   
-  // Debug fonksiyonu - popup durumunu kontrol et
-  window.debugPopup = async function() {
-    console.log('Popup Debug Bilgileri:');
-    console.log('window.popupShown:', window.popupShown);
-    console.log('window.popupShowOnce:', window.popupShowOnce);
-    
-    const userIP = await getUserIP();
-    console.log('Kullanıcı IP:', userIP);
-    
-    if (window.supabase) {
-      const { data: popupSettings, error: settingsError } = await window.supabase
-        .from('popup_settings')
-        .select('*')
-        .single();
-      
-      console.log('Popup ayarları:', popupSettings);
-      console.log('Popup ayarları hatası:', settingsError);
-      
-      const { data, error } = await window.supabase
-        .from('popup_views')
-        .select('*')
-        .eq('ip_address', userIP)
-        .single();
-      
-      console.log('Popup görüntüleme kaydı:', data);
-      console.log('Popup görüntüleme hatası:', error);
-      
-      if (data) {
-        const lastViewed = new Date(data.viewed_at);
-        const now = new Date();
-        const hoursDiff = (now - lastViewed) / (1000 * 60 * 60);
-        console.log('Son görüntüleme:', lastViewed);
-        console.log('Şu anki zaman:', now);
-        console.log('Saat farkı:', hoursDiff);
-        console.log('3 saat geçmiş mi?', hoursDiff >= 3);
-      }
-    }
-  };
-
-  // Debug fonksiyonu - backend görsellerini kontrol et
-  window.debugImages = async function() {
-    console.log('aaaaaas');
-    console.log('🖼️ Backend Görsel Debug Bilgileri');
-    console.log('=====================================');
-    
-    // 1. Backend durumu kontrolü
-    console.log('\n1️⃣ BACKEND DURUMU:');
-    console.log('🔧 Backend Manager:', window.backendManager ? '✅ Mevcut' : '❌ Yok');
-    console.log('🔧 Supabase:', window.supabase ? '✅ Mevcut' : '❌ Yok');
-    console.log('🔧 Preloader:', window.preloader ? '✅ Mevcut' : '❌ Yok');
-    
-    if (!window.backendManager) {
-      console.warn('⚠️ Backend Manager bulunamadı!');
-      return;
-    }
-
-    // Preloader durumunu detaylı kontrol et
-    if (window.preloader) {
-      console.log('🔧 Preloader isInitialized:', window.preloader.isInitialized);
-      console.log('🔧 Preloader cachedData keys:', Object.keys(window.preloader.cachedData || {}));
-    }
-
-    // 2. Site içeriklerini kontrol et
-    console.log('\n2️⃣ SITE İÇERİKLERİ:');
-    try {
-      const siteContent = await window.preloader.getCachedData('siteContent');
-      if (siteContent) {
-        console.log('✅ Site içerikleri yüklü');
-        console.log('📊 Site Content Keys:', Object.keys(siteContent));
-        
-        // Header logo (en üst)
-        if (siteContent.headerLogo) {
-          console.log('🖼️ Header Logo URL:', siteContent.headerLogo);
-          await testImageLoad(siteContent.headerLogo, 'Header Logo');
-        } else {
-          console.log('⚠️ Header Logo: Tanımlı değil');
-        }
-        
-        // Carousel images (ana sayfa)
-        if (siteContent.carouselImages) {
-          try {
-            const carouselImages = JSON.parse(siteContent.carouselImages);
-            console.log('🎠 Carousel Images:', carouselImages.length, 'adet');
-            for (let i = 0; i < carouselImages.length; i++) {
-              console.log(`   ${i + 1}. ${carouselImages[i]}`);
-              await testImageLoad(carouselImages[i], `Carousel Image ${i + 1}`);
-            }
-          } catch (e) {
-            console.error('❌ Carousel görselleri parse edilemedi:', e);
-          }
-        } else {
-          console.log('⚠️ Carousel Images: Tanımlı değil');
-        }
-        
-        // About image (hakkımızda sayfası)
-        if (siteContent.aboutImage) {
-          console.log('🖼️ About Image URL:', siteContent.aboutImage);
-          await testImageLoad(siteContent.aboutImage, 'About Image');
-        } else {
-          console.log('⚠️ About Image: Tanımlı değil');
-        }
-        
-        // Content logo (iletişim bölümü)
-        if (siteContent.contentLogo) {
-          console.log('🖼️ Content Logo URL:', siteContent.contentLogo);
-          await testImageLoad(siteContent.contentLogo, 'Content Logo');
-        } else {
-          console.log('⚠️ Content Logo: Tanımlı değil');
-        }
-      } else {
-        console.warn('⚠️ Site içerikleri yüklenmemiş');
-        
-        // Supabase'den direkt kontrol et
-        if (window.supabase) {
-          console.log('🔍 Supabase\'den direkt kontrol ediliyor...');
-          try {
-            const { data, error } = await window.supabase
-              .from('site_content')
-              .select('*')
-              .single();
-            
-            if (error) {
-              console.error('❌ Supabase site_content hatası:', error);
-            } else if (data) {
-              console.log('✅ Supabase\'de site_content mevcut:', data);
-              console.log('📊 Supabase Data Keys:', Object.keys(data));
-            } else {
-              console.warn('⚠️ Supabase\'de site_content bulunamadı');
-            }
-          } catch (e) {
-            console.error('❌ Supabase kontrol hatası:', e);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('❌ Site içerikleri alınırken hata:', error);
-    }
-
-    // 3. Taşımacılık görsellerini kontrol et
-    console.log('\n3️⃣ TAŞIMACILIK GÖRSELLERİ:');
-    try {
-      const studentServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/studentService.png');
-      console.log('🎓 Öğrenci Servisi URL:', studentServiceUrl);
-      await testImageLoad(studentServiceUrl, 'Öğrenci Servisi');
-      
-      const staffServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/staffService.png');
-      console.log('👔 Personel Servisi URL:', staffServiceUrl);
-      await testImageLoad(staffServiceUrl, 'Personel Servisi');
-    } catch (error) {
-      console.error('❌ Taşımacılık görselleri kontrol edilirken hata:', error);
-    }
-
-    // 4. DOM'daki görselleri kontrol et
-    console.log('\n4️⃣ DOM GÖRSELLERİ:');
-    checkDOMImages();
-  };
-
-  // Görsel yükleme testi
-  async function testImageLoad(url, name) {
-    try {
-      const response = await fetch(url, { method: 'HEAD' });
-      if (response.ok) {
-        console.log(`✅ ${name}: Yüklendi (${response.status})`);
-        return true;
-      } else {
-        console.warn(`⚠️ ${name}: Yüklenemedi (${response.status})`);
-        return false;
-      }
-    } catch (error) {
-      console.error(`❌ ${name}: Hata -`, error.message);
-      return false;
-    }
-  }
-
-  // DOM'daki görselleri kontrol et
-  function checkDOMImages() {
-    // 1. Header logoları (en üst)
-    const headerImgs = document.querySelectorAll('.brand img');
-    console.log('🏠 Header Logoları:', headerImgs.length, 'adet');
-    headerImgs.forEach((img, index) => {
-      console.log(`   ${index + 1}. ${img.src} - ${img.hidden ? '❌ Gizli' : '✅ Görünür'}`);
-    });
-
-    // 2. Carousel görselleri (ana sayfa)
-    const carousel = document.querySelector('.carousel');
-    if (carousel) {
-      const carouselImg = carousel.querySelector('img');
-      if (carouselImg) {
-        console.log('🎠 Carousel Aktif Görsel:', carouselImg.src);
-        if (carouselImg.src.includes('github.io')) {
-          console.warn('⚠️ Carousel yanlış URL kullanıyor (github.io)');
-        }
-      } else {
-        console.log('⚠️ Carousel görseli bulunamadı');
-      }
-      
-      const dataImages = carousel.getAttribute('data-images');
-      if (dataImages) {
-        try {
-          const images = JSON.parse(dataImages);
-          console.log('🎠 Carousel Data Images:', images.length, 'adet');
-          images.forEach((img, index) => {
-            console.log(`   ${index + 1}. ${img}`);
-          });
-        } catch (e) {
-          console.warn('⚠️ Carousel data-images parse edilemedi');
-        }
-      } else {
-        console.log('⚠️ Carousel data-images bulunamadı');
-        console.log('🔍 Carousel attributes:', Array.from(carousel.attributes).map(attr => `${attr.name}="${attr.value}"`));
-      }
-    } else {
-      console.log('⚠️ Carousel elementi bulunamadı');
-    }
-
-    // 3. About visual (hakkımızda sayfası)
-    const aboutVisuals = document.querySelectorAll('.about-visual');
-    console.log('ℹ️ About Visuals:', aboutVisuals.length, 'adet');
-    aboutVisuals.forEach((visual, index) => {
-      const bg = getComputedStyle(visual).getPropertyValue('--bg');
-      console.log(`   ${index + 1}. Background: ${bg || 'Tanımlı değil'}`);
-    });
-
-    // 4. Taşımacılık background'ları
-    const studentBg = document.querySelector('[data-student-service-bg]');
-    if (studentBg) {
-      const bg = getComputedStyle(studentBg).getPropertyValue('--bg');
-      console.log('🎓 Öğrenci Servisi Background:', bg || 'Tanımlı değil');
-    } else {
-      console.log('⚠️ Öğrenci Servisi background elementi bulunamadı');
-    }
-
-    const staffBg = document.querySelector('[data-staff-service-bg]');
-    if (staffBg) {
-      const bg = getComputedStyle(staffBg).getPropertyValue('--bg');
-      console.log('👔 Personel Servisi Background:', bg || 'Tanımlı değil');
-    } else {
-      console.log('⚠️ Personel Servisi background elementi bulunamadı');
-    }
-
-    // 5. Content logoları (iletişim bölümü - en alt)
-    const contentImgs = document.querySelectorAll('.contact-logo img');
-    console.log('📞 Content Logoları:', contentImgs.length, 'adet');
-    contentImgs.forEach((img, index) => {
-      console.log(`   ${index + 1}. ${img.src} - ${img.hidden ? '❌ Gizli' : '✅ Görünür'}`);
-    });
-  }
 
 })();

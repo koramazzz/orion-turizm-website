@@ -1636,8 +1636,8 @@ class AdminPanel {
           </div>
           <div class="tour-details-grid tour-details-full-width">
             <div class="edit-group">
-              <label>Tur Hakkında (Detaylı Açıklama):</label>
-              <textarea placeholder="Tur hakkında detaylı bilgi yazın..." class="tour-detail-description" rows="4">${detail.description || ''}</textarea>
+              <label>Gezi Noktaları (Her satıra bir madde):</label>
+              <textarea placeholder="Gelibolu&#10;Çanakkale Şehitler Abidesi&#10;Truva Antik Kenti" class="tour-detail-description" rows="4">${detail.description || ''}</textarea>
             </div>
             <div class="edit-group">
               <label>Turun Öne Çıkan Özellikleri (Her satıra bir özellik):</label>
@@ -1646,8 +1646,8 @@ class AdminPanel {
           </div>
           <div class="tour-details-grid tour-details-full-width">
             <div class="edit-group">
-              <label>Tur Programı (Her satıra bir gün):</label>
-              <textarea placeholder="Gün 1: Uçhisar – Göreme Açık Hava Müzesi&#10;Gün 2: Vadiler – Avanos seramik atölyesi&#10;Gün 3: Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4">${itineraryText}</textarea>
+              <label>Tur Programı (Her satıra bir madde):</label>
+              <textarea placeholder="Uçhisar - Göreme Açık Hava Müzesi&#10;Vadiler - Avanos seramik atölyesi&#10;Serbest zaman ve dönüş" class="tour-detail-itinerary" rows="4">${itineraryText}</textarea>
             </div>
           </div>
           <div class="tour-details-actions">
@@ -2439,8 +2439,6 @@ class ContentUpdater {
             const tourImg = tourCard.querySelector('img');
             if (tourImg) {
               tourImg.src = mainImageUrl;
-              tourImg.onload = () => console.log(`✅ ${tour.name} görseli yüklendi`);
-              tourImg.onerror = () => console.log(`⚠️ ${tour.name} görseli bulunamadı (varsayılan kullanılıyor)`);
             }
             
             // Visual-bg elementini bul (eğer varsa)
@@ -2454,7 +2452,6 @@ class ContentUpdater {
         }
       }));
       
-      console.log('✅ Tur görselleri yükleme tamamlandı');
       
       // Kartları göster (fade-in)
       setTimeout(() => {
@@ -2488,7 +2485,6 @@ class ContentUpdater {
     const tourLink = urlParams.get('tour');
 
     if (!tourLink) {
-      console.log('Tur parametresi bulunamadı');
       // İçeriği göster (gizli kalmasın)
       setTimeout(() => {
         contentSections.forEach(section => section.style.opacity = '1');
@@ -2496,18 +2492,15 @@ class ContentUpdater {
       return;
     }
 
-    console.log('🖼️ Tur detayı yükleniyor:', tourLink);
 
     try {
       // Backend'den tur detayını al
       const tourDetail = await window.backendManager.getTourDetails(tourLink);
 
       if (!tourDetail) {
-        console.log('Tur detayı bulunamadı:', tourLink);
         return;
       }
 
-      console.log('✅ Tur detayı bulundu:', tourDetail);
 
       // Başlık ve alt başlığı güncelle
       const titleEl = document.getElementById('tourTitle');
@@ -2545,7 +2538,17 @@ class ContentUpdater {
       // Tur açıklamasını güncelle
       const descriptionEl = document.getElementById('tourDescription');
       if (descriptionEl && tourDetail.description) {
-        descriptionEl.textContent = tourDetail.description;
+        const descriptionLines = String(tourDetail.description)
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean);
+        descriptionEl.innerHTML = '';
+        descriptionLines.forEach((line, index) => {
+          const li = document.createElement('li');
+          li.style = `padding: 8px 0; ${index < descriptionLines.length - 1 ? 'border-bottom: 1px solid #eee;' : ''}`;
+          li.textContent = line;
+          descriptionEl.appendChild(li);
+        });
       }
 
       // Öne çıkan özellikleri güncelle
@@ -2567,13 +2570,11 @@ class ContentUpdater {
         tourDetail.itinerary.forEach((day, index) => {
           const li = document.createElement('li');
           li.style = `padding: 12px 0; ${index < tourDetail.itinerary.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''} font-size: 1.1rem; line-height: 1.6;`;
-          const dayContent = (day.replace(/^Gün \d+:\s*/i, '').trim()) || day;
-          li.textContent = `Gün: ${dayContent}`;
+          li.textContent = day;
           itineraryEl.appendChild(li);
         });
       }
 
-      console.log('✅ Tur detay sayfası yüklendi');
       
       // İçeriği göster (fade-in)
       setTimeout(() => {
@@ -2797,7 +2798,6 @@ async function saveTourImage(tourName, imageData) {
     // Görseli Supabase Storage'a yükle
     const publicUrl = await window.backendManager.uploadTourImage(imageData, tourId, 'main');
     
-    console.log('✅ Tur görseli kaydedildi:', tourName, publicUrl);
     
     // Başarı mesajı göster
     if (window.adminPanel) {
