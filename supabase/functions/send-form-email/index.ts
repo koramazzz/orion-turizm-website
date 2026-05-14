@@ -10,6 +10,21 @@ interface FormData {
   submittedAt: string
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '-')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderFields(data: Record<string, any>): string {
+  return Object.keys(data).map(key =>
+    `<p><strong>${escapeHtml(key)}:</strong> ${escapeHtml(data[key] ?? '-')}</p>`
+  ).join('')
+}
+
 serve(async (req) => {
   // CORS headers
   const corsHeaders = {
@@ -23,7 +38,12 @@ serve(async (req) => {
   }
 
   try {
+    if (!RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY tanımlı değil')
+    }
+
     const { formType, data, submittedAt }: FormData = await req.json()
+    const safeData = data && typeof data === 'object' ? data : {}
 
     // Form tipine göre email içeriği oluştur
     let emailSubject = ''
@@ -34,11 +54,9 @@ serve(async (req) => {
         emailSubject = '🔔 Yeni İletişim Formu'
         emailBody = `
           <h2>Yeni İletişim Formu Gönderildi</h2>
-          ${Object.keys(data).map(key => 
-            `<p><strong>${key}:</strong> ${data[key] || '-'}</p>`
-          ).join('')}
+          ${renderFields(safeData)}
           <hr>
-          <p><small>Gönderim Zamanı: ${submittedAt}</small></p>
+          <p><small>Gönderim Zamanı: ${escapeHtml(submittedAt)}</small></p>
         `
         break
 
@@ -46,11 +64,9 @@ serve(async (req) => {
         emailSubject = '🗺️ Yeni Özel Rota Talebi'
         emailBody = `
           <h2>Yeni Özel Rota Talebi</h2>
-          ${Object.keys(data).map(key => 
-            `<p><strong>${key}:</strong> ${data[key] || '-'}</p>`
-          ).join('')}
+          ${renderFields(safeData)}
           <hr>
-          <p><small>Gönderim Zamanı: ${submittedAt}</small></p>
+          <p><small>Gönderim Zamanı: ${escapeHtml(submittedAt)}</small></p>
         `
         break
 
@@ -58,11 +74,9 @@ serve(async (req) => {
         emailSubject = '🎫 Yeni Tur Rezervasyon Talebi'
         emailBody = `
           <h2>Yeni Tur Rezervasyon Talebi</h2>
-          ${Object.keys(data).map(key => 
-            `<p><strong>${key}:</strong> ${data[key] || '-'}</p>`
-          ).join('')}
+          ${renderFields(safeData)}
           <hr>
-          <p><small>Gönderim Zamanı: ${submittedAt}</small></p>
+          <p><small>Gönderim Zamanı: ${escapeHtml(submittedAt)}</small></p>
         `
         break
 
@@ -70,10 +84,10 @@ serve(async (req) => {
         emailSubject = '📝 Yeni Form Gönderimi'
         emailBody = `
           <h2>Yeni Form Gönderimi</h2>
-          <p><strong>Form Tipi:</strong> ${formType}</p>
-          <pre>${JSON.stringify(data, null, 2)}</pre>
+          <p><strong>Form Tipi:</strong> ${escapeHtml(formType)}</p>
+          <pre>${escapeHtml(JSON.stringify(safeData, null, 2))}</pre>
           <hr>
-          <p><small>Gönderim Zamanı: ${submittedAt}</small></p>
+          <p><small>Gönderim Zamanı: ${escapeHtml(submittedAt)}</small></p>
         `
     }
 
@@ -109,11 +123,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Mail gönderim hatası:', error)
+    const message = error instanceof Error ? error.message : 'Bilinmeyen hata'
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: message
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -1320,11 +1320,11 @@ class AdminPanel {
       if (link) {
         const images = [];
         item.querySelectorAll('.tour-detail-image-item img.tour-detail-image-preview').forEach(img => {
-          const src = (img.src || '').split('?')[0].trim();
+          const src = (img.dataset.publicUrl || img.src || '').split('?')[0].trim();
           if (src && !src.startsWith('data:') && !src.startsWith('blob:')) images.push(src);
         });
         const mapImageEl = item.querySelector('.tour-detail-mapimage-preview');
-        const mapImageSrc = ((mapImageEl?.src || '').split('?')[0] || '').trim();
+        const mapImageSrc = ((mapImageEl?.dataset.publicUrl || '').split('?')[0] || '').trim();
         const tourDetailData = {
           link,
           title: title || 'Tur Detayı',
@@ -1693,6 +1693,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   if (isAdminPage) {
     window.adminPanel = new AdminPanel();
+    setTimeout(() => {
+      if (typeof window.auditPageImages === 'function') window.auditPageImages();
+    }, 1500);
   } else {
   }
 });
@@ -2488,6 +2491,7 @@ class ContentUpdater {
       // İçeriği göster (gizli kalmasın)
       setTimeout(() => {
         contentSections.forEach(section => section.style.opacity = '1');
+        if (typeof window.auditPageImages === 'function') window.auditPageImages();
       }, 50);
       return;
     }
@@ -2498,6 +2502,10 @@ class ContentUpdater {
       const tourDetail = await window.backendManager.getTourDetails(tourLink);
 
       if (!tourDetail) {
+        setTimeout(() => {
+          contentSections.forEach(section => section.style.opacity = '1');
+          if (typeof window.auditPageImages === 'function') window.auditPageImages();
+        }, 50);
         return;
       }
 
@@ -2508,13 +2516,20 @@ class ContentUpdater {
       if (titleEl) titleEl.textContent = tourDetail.title || 'Tur Detayı';
       if (subtitleEl) subtitleEl.textContent = tourDetail.subtitle || '';
 
-      // Harita görselini güncelle
+      // Gezi afişi görselini güncelle
       const normalizedTourId = window.normalizeTourId(tourLink);
-      const mapImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${normalizedTourId}/mapImage.png`);
+      const savedMapImageUrl = window.sanitizeImageUrl(tourDetail.mapImage || '');
+      const mapImageUrl = await resolveTourMapImageUrl(normalizedTourId, savedMapImageUrl);
       const mapImageEl = document.getElementById('mapImage');
-      if (mapImageEl) {
+      const mapSectionEl = mapImageEl?.closest('.map-section');
+      if (mapImageEl && mapImageUrl) {
         mapImageEl.style.setProperty('--bg', `url('${mapImageUrl}')`);
         mapImageEl.dataset.mapImageUrl = mapImageUrl;
+        if (mapSectionEl) mapSectionEl.style.display = '';
+      } else if (mapImageEl) {
+        mapImageEl.style.removeProperty('--bg');
+        delete mapImageEl.dataset.mapImageUrl;
+        if (mapSectionEl) mapSectionEl.style.display = 'none';
       }
 
       // Tur fotoğraflarını güncelle (tourDetail.images varsa onu kullan, yoksa storage'dan probe)
@@ -2528,8 +2543,15 @@ class ContentUpdater {
         const imageUrls = mergeTourImageUrls(savedImageUrls, storageImageUrls);
         imageUrls.forEach((url, i) => {
           const img = document.createElement('img');
-          img.src = window.withSafeCacheBuster(url);
+          const imageSrc = window.withSafeCacheBuster(url);
+          img.loading = 'lazy';
+          img.decoding = 'async';
           img.alt = `Tur Fotoğrafı ${i + 1}`;
+          window.watchImageQuality(img, {
+            section: `Tur fotoğrafları ${i + 1}`,
+            removeOnError: true
+          });
+          img.src = imageSrc;
           img.onclick = function() {
             if (typeof openImageModal === 'function') {
               const gallerySources = imageUrls.map((imageUrl) => window.withSafeCacheBuster(imageUrl));
@@ -2585,6 +2607,7 @@ class ContentUpdater {
       // İçeriği göster (fade-in)
       setTimeout(() => {
         contentSections.forEach(section => section.style.opacity = '1');
+        if (typeof window.auditPageImages === 'function') window.auditPageImages();
       }, 50);
     } catch (error) {
       console.error('Tur detay yükleme hatası:', error);
@@ -2592,6 +2615,7 @@ class ContentUpdater {
       // Hata olsa bile içeriği göster
       setTimeout(() => {
         contentSections.forEach(section => section.style.opacity = '1');
+        if (typeof window.auditPageImages === 'function') window.auditPageImages();
       }, 50);
     }
   }
@@ -2627,7 +2651,132 @@ window.withSafeCacheBuster = window.withSafeCacheBuster || function(url = '') {
   if (!cleanUrl) return '';
   const isHttpOrRelative = /^https?:\/\//i.test(cleanUrl) || cleanUrl.startsWith('/');
   if (!isHttpOrRelative) return cleanUrl;
-  return cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`;
+  return `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+};
+
+window.logImageWarning = window.logImageWarning || function(message, details = {}) {
+  const section = details.section || 'sayfa';
+  const alt = details.alt ? ` | alt: ${details.alt}` : '';
+  const natural = details.natural ? ` | doğal: ${details.natural}` : '';
+  const rendered = details.rendered ? ` | görünen: ${details.rendered}` : '';
+  const url = details.url ? ` | url: ${details.url}` : '';
+  console.warn(`${message} | bölüm: ${section}${alt}${natural}${rendered}${url}`);
+};
+
+window.getImageElementUrl = window.getImageElementUrl || function(img) {
+  if (!(img instanceof HTMLImageElement)) return '';
+  const attrSrc = img.getAttribute('src') || '';
+  const src = attrSrc || img.currentSrc || '';
+  const cleanUrl = window.sanitizeImageUrl(src);
+  if (!cleanUrl || cleanUrl === window.location.href) return '';
+  return cleanUrl;
+};
+
+window.watchImageQuality = window.watchImageQuality || function(img, context = {}) {
+  if (!(img instanceof HTMLImageElement) || img.dataset.qualityWatch === '1') return;
+  if (img.hidden) return;
+
+  const sourceUrl = window.getImageElementUrl(img);
+  if (!sourceUrl) return;
+
+  const style = getComputedStyle(img);
+  if (style.display === 'none' || style.visibility === 'hidden') return;
+
+  img.dataset.qualityWatch = '1';
+
+  const getContext = () => ({
+    section: context.section || img.closest('section')?.id || img.closest('[class]')?.className || 'sayfa',
+    alt: img.alt || '',
+    url: window.getImageElementUrl(img) || sourceUrl
+  });
+
+  const checkResolution = () => {
+    if (!img.naturalWidth || !img.naturalHeight) return;
+    const renderedWidth = img.clientWidth || img.width || 0;
+    const renderedHeight = img.clientHeight || img.height || 0;
+    if (!renderedWidth || !renderedHeight) return;
+
+    if (img.naturalWidth < renderedWidth * 1.25 || img.naturalHeight < renderedHeight * 1.25) {
+      window.logImageWarning('Görsel düşük çözünürlükte olabilir', {
+        ...getContext(),
+        natural: `${img.naturalWidth}x${img.naturalHeight}`,
+        rendered: `${Math.round(renderedWidth)}x${Math.round(renderedHeight)}`
+      });
+    }
+  };
+
+  img.addEventListener('error', () => {
+    window.logImageWarning('Görsel yüklenemedi', getContext());
+    if (context.removeOnError) img.remove();
+  });
+
+  img.addEventListener('load', checkResolution);
+  if (img.complete) {
+    if (img.naturalWidth) checkResolution();
+    else window.logImageWarning('Görsel yüklenemedi', getContext());
+  }
+};
+
+window.getBackgroundImageUrl = window.getBackgroundImageUrl || function(element) {
+  if (!(element instanceof HTMLElement)) return '';
+
+  const extract = (value = '') => {
+    const match = String(value).match(/url\((['"]?)(.*?)\1\)/i);
+    return match && match[2] ? match[2] : '';
+  };
+
+  let value = '';
+  try {
+    value = getComputedStyle(element).getPropertyValue('--bg') || '';
+  } catch (error) {}
+  const customPropertyUrl = extract(value);
+  if (customPropertyUrl) return customPropertyUrl;
+
+  try {
+    value = getComputedStyle(element).backgroundImage || '';
+  } catch (error) {}
+  return extract(value);
+};
+
+window.watchBackgroundImageQuality = window.watchBackgroundImageQuality || function(element, context = {}) {
+  if (!(element instanceof HTMLElement) || element.dataset.bgQualityWatch === '1') return;
+
+  const style = getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden') return;
+
+  const url = window.sanitizeImageUrl(window.getBackgroundImageUrl(element));
+  if (!url) return;
+
+  element.dataset.bgQualityWatch = '1';
+  const probe = new Image();
+  probe.onload = () => {
+    const renderedWidth = element.clientWidth || 0;
+    const renderedHeight = element.clientHeight || 0;
+    if (!renderedWidth || !renderedHeight) return;
+
+    if (probe.naturalWidth < renderedWidth * 1.25 || probe.naturalHeight < renderedHeight * 1.25) {
+      window.logImageWarning('Arka plan görseli düşük çözünürlükte olabilir', {
+        section: context.section || element.id || element.className || 'sayfa',
+        natural: `${probe.naturalWidth}x${probe.naturalHeight}`,
+        rendered: `${Math.round(renderedWidth)}x${Math.round(renderedHeight)}`,
+        url
+      });
+    }
+  };
+  probe.onerror = () => {
+    window.logImageWarning('Arka plan görseli yüklenemedi', {
+      section: context.section || element.id || element.className || 'sayfa',
+      url
+    });
+  };
+  probe.src = window.withSafeCacheBuster(url);
+};
+
+window.auditPageImages = window.auditPageImages || function(root = document) {
+  root.querySelectorAll('img').forEach((img) => window.watchImageQuality(img));
+  root.querySelectorAll('.visual-bg, [data-student-service-bg], [data-staff-service-bg]').forEach((element) => {
+    window.watchBackgroundImageQuality(element);
+  });
 };
 
 function parseTourImageIndex(url = '') {
@@ -2664,6 +2813,67 @@ async function getTourStorageImageUrls(linkOrTourId = '') {
     console.warn('Tur detay görselleri listelenemedi:', error);
     return [];
   }
+}
+
+async function getTourStorageMapImageUrl(linkOrTourId = '') {
+  if (!window.backendManager || !linkOrTourId) return '';
+  const tourId = window.normalizeTourId(linkOrTourId);
+  try {
+    const folderFiles = await window.backendManager.listImages('tour-images', `tours/${tourId}`);
+    const hasMapImage = (folderFiles || []).some(file => /^mapImage\.png$/i.test(file?.name || ''));
+    return hasMapImage
+      ? window.backendManager.getImageUrl('tour-images', `tours/${tourId}/mapImage.png`)
+      : '';
+  } catch (error) {
+    console.warn('Gezi afişi görseli listelenemedi:', error);
+    return '';
+  }
+}
+
+function getTourStoragePathFromPublicUrl(url = '') {
+  const cleanUrl = window.sanitizeImageUrl(url);
+  const match = cleanUrl.match(/\/storage\/v1\/object\/public\/tour-images\/(.+)$/i);
+  return match && match[1] ? decodeURIComponent(match[1].split('?')[0]) : '';
+}
+
+function imageUrlLoads(url = '') {
+  const cleanUrl = window.sanitizeImageUrl(url);
+  if (!cleanUrl) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    const probe = new Image();
+    const timeout = setTimeout(() => {
+      probe.onload = null;
+      probe.onerror = null;
+      resolve(false);
+    }, 5000);
+
+    probe.onload = () => {
+      clearTimeout(timeout);
+      resolve(true);
+    };
+    probe.onerror = () => {
+      clearTimeout(timeout);
+      resolve(false);
+    };
+    probe.src = window.withSafeCacheBuster(cleanUrl);
+  });
+}
+
+async function resolveTourMapImageUrl(tourId = '', savedUrl = '') {
+  const cleanSavedUrl = window.sanitizeImageUrl(savedUrl);
+  const storagePath = getTourStoragePathFromPublicUrl(cleanSavedUrl);
+  const expectedStoragePath = `tours/${window.normalizeTourId(tourId)}/mapImage.png`;
+
+  if (storagePath && storagePath.toLowerCase() === expectedStoragePath.toLowerCase()) {
+    return getTourStorageMapImageUrl(tourId);
+  }
+
+  if (cleanSavedUrl && await imageUrlLoads(cleanSavedUrl)) {
+    return cleanSavedUrl;
+  }
+
+  return getTourStorageMapImageUrl(tourId);
 }
 
 function addTourDetail() {
@@ -2736,7 +2946,7 @@ function handleTourImageUpload(event, previewElement) {
         try {
           const tourId = tourLink.toLowerCase().replace(/[^a-z0-9-]/g, '-');
           const publicUrl = await window.backendManager.uploadTourImage(e.target.result, tourId, 'main');
-          previewElement.src = `${publicUrl}?v=${Date.now()}`;
+          previewElement.src = window.withSafeCacheBuster(publicUrl);
           if (window.adminPanel) window.adminPanel.showSuccessMessage();
         } catch (err) {
           console.error('Tur görseli yükleme hatası:', err);
@@ -2764,6 +2974,11 @@ window.createTourDetailImageSlot = function(container, index, imgSrc = '') {
     <button type="button" class="btn btn-ghost btn-sm remove-tour-detail-image" style="margin-top: 4px; font-size: 11px;">🗑️ Sil</button>
   `;
   container.appendChild(div);
+  const img = div.querySelector('.tour-detail-image-preview');
+  const cleanUrl = window.sanitizeImageUrl(imgSrc);
+  if (img && cleanUrl && !cleanUrl.startsWith('data:') && !cleanUrl.startsWith('blob:')) {
+    img.dataset.publicUrl = cleanUrl;
+  }
 };
 
 // Tur detay görsellerini yükle (admin panelinde göster) - images array veya storage probe
@@ -2778,11 +2993,7 @@ window.loadTourDetailImagesFromStorage = async function(item, link, imagesArray)
     window.createTourDetailImageSlot(container, 1);
   } else {
     urls.forEach((url, i) => {
-      const cleanUrl = window.sanitizeImageUrl(url);
-      const shouldBustCache = /^https?:\/\//i.test(cleanUrl) || cleanUrl.startsWith('/');
-      const imageSrc = shouldBustCache
-        ? (cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`)
-        : cleanUrl;
+      const imageSrc = window.withSafeCacheBuster(url);
       window.createTourDetailImageSlot(container, i + 1, imageSrc);
     });
   }
@@ -2831,6 +3042,10 @@ if (!window.location.pathname.includes('admin.html')) {
     if (window.location.pathname.includes('tur-detay.html')) {
       ContentUpdater.loadTourDetailPage();
     }
+
+    setTimeout(() => {
+      if (typeof window.auditPageImages === 'function') window.auditPageImages();
+    }, 1500);
     
     // Gizli admin erişimi: Ctrl+Shift+A
     document.addEventListener('keydown', (e) => {

@@ -1806,7 +1806,7 @@
         if (cleanUrl.startsWith('data:') || cleanUrl.startsWith('blob:')) {
           return cleanUrl.split('?')[0];
         }
-        return cleanUrl.includes('?') ? cleanUrl : `${cleanUrl}?v=${Date.now()}`;
+        return `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
       }
       
       // Tur detay upload fonksiyonları
@@ -1819,9 +1819,11 @@
           const normalizedId = normalizeTourId(linkValue);
           const mapImageUrl = window.backendManager.getImageUrl('tour-images', `tours/${normalizedId}/mapImage.png`);
           mapPreview.onerror = function() {
+            delete mapPreview.dataset.publicUrl;
             mapPreview.style.display = 'none';
           };
           mapPreview.onload = function() {
+            mapPreview.dataset.publicUrl = mapImageUrl;
             mapPreview.style.display = 'block';
           };
           mapPreview.src = withSafeCacheBuster(mapImageUrl);
@@ -1841,10 +1843,15 @@
               ? detailMapImage.split('?')[0]
               : detailMapImage;
             const shouldBustCache = /^https?:\/\//i.test(cleanMapImage) || cleanMapImage.startsWith('/');
-            mapPreview.src = shouldBustCache
-              ? (cleanMapImage.includes('?') ? cleanMapImage : `${cleanMapImage}?v=${Date.now()}`)
-              : cleanMapImage;
-            mapPreview.style.display = 'block';
+            mapPreview.onerror = function() {
+              delete mapPreview.dataset.publicUrl;
+              mapPreview.style.display = 'none';
+            };
+            mapPreview.onload = function() {
+              mapPreview.dataset.publicUrl = cleanMapImage;
+              mapPreview.style.display = 'block';
+            };
+            mapPreview.src = shouldBustCache ? withSafeCacheBuster(cleanMapImage) : cleanMapImage;
           } else if (activeLinkValue && window.backendManager) {
             applyMapPreviewFromLink(activeLinkValue);
           }
@@ -1916,14 +1923,28 @@
         const file = event.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = function(e) {
+          reader.onload = async function(e) {
             previewElement.src = e.target.result;
             previewElement.style.display = 'block';
+            previewElement.dataset.uploading = '1';
             
             const tourDetailItem = event.target.closest('.tour-details-item');
             const link = tourDetailItem.querySelector('.tour-detail-link').value;
-            if (link) {
-              saveTourDetailImage(link, imageType, e.target.result);
+            if (!link) {
+              delete previewElement.dataset.uploading;
+              alert('Lütfen önce tur seçin!');
+              return;
+            }
+
+            try {
+              const publicUrl = await saveTourDetailImage(link, imageType, e.target.result);
+              if (publicUrl) {
+                const cleanUrl = publicUrl.split('?')[0];
+                previewElement.dataset.publicUrl = cleanUrl;
+                previewElement.src = withSafeCacheBuster(cleanUrl);
+              }
+            } finally {
+              delete previewElement.dataset.uploading;
             }
           };
           reader.readAsDataURL(file);
@@ -2005,7 +2026,7 @@
           
           // Cache-busting ile önizlemeyi güncelle
           setTimeout(() => {
-            previewElement.src = `${publicUrl}?v=${Date.now()}`;
+            previewElement.src = withSafeCacheBuster(publicUrl);
           }, 500);
           
           // Değişiklikleri backend'e kaydet

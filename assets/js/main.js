@@ -670,7 +670,7 @@
       kapadokya: {
         title: 'Kapadokya Kaşifi',
         subtitle: 'Uçhisar, Göreme ve vadilerin büyüleyici dünyası.',
-        mapImage: 'https://images.unsplash.com/photo-1468109320504-ff0cd3d2d0fc?q=80&w=1200&auto=format&fit=crop',
+        mapImage: '',
         mapTitle: 'Kapadokya Gezi Afişi',
         mapDescription: 'Göreme, Uçhisar, Avanos ve vadiler',
         images:[
@@ -711,7 +711,13 @@
     var mapImage = document.getElementById('mapImage'); 
     if(mapImage){
       var mapSrc = tour.mapImage || '';
-      if (mapSrc) mapImage.style.setProperty('--bg', 'url(' + mapSrc + ')');
+      var mapSection = mapImage.closest('.map-section');
+      if (mapSrc) {
+        mapImage.style.setProperty('--bg', 'url(' + mapSrc + ')');
+        if (mapSection) mapSection.style.display = '';
+      } else if (mapSection) {
+        mapSection.style.display = 'none';
+      }
     }
     
     // Galeri
