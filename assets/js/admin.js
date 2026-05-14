@@ -1330,7 +1330,7 @@ class AdminPanel {
           title: title || 'Tur Detayı',
           subtitle: subtitle || 'Örnek program ve görseller aşağıdadır.',
           mapImage: (mapImageSrc && !mapImageSrc.startsWith('data:') && !mapImageSrc.startsWith('blob:')) ? mapImageSrc : '',
-          mapTitle: mapTitle || 'Tur Güzergâhı',
+          mapTitle: mapTitle || 'Gezi Afişi',
           mapDescription: mapDesc || 'Detaylı rota ve duraklar',
           images,
           description: description || '',
@@ -1611,19 +1611,19 @@ class AdminPanel {
           </div>
           <div class="tour-details-grid">
             <div class="edit-group">
-              <label>Harita Görseli:</label>
+              <label>Gezi Afişi Görseli:</label>
               <div class="file-upload" style="margin-bottom: 8px;">
                 <input type="file" class="tour-detail-mapimage-upload" accept="image/*" />
-                📁 Harita Görseli Yükle
+                📁 Gezi Afişi Görseli Yükle
               </div>
               <img class="tour-detail-mapimage-preview" style="width: 100px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; display: none;" />
             </div>
             <div class="edit-group">
-              <label>Harita Başlığı:</label>
-              <input type="text" placeholder="Kapadokya Haritası" class="tour-detail-maptitle" value="${detail.mapTitle || ''}" />
+              <label>Gezi Afişi Başlığı:</label>
+              <input type="text" placeholder="Kapadokya Gezi Afişi" class="tour-detail-maptitle" value="${detail.mapTitle || ''}" />
             </div>
             <div class="edit-group">
-              <label>Harita Açıklaması:</label>
+              <label>Gezi Afişi Açıklaması:</label>
               <input type="text" placeholder="Tur güzergahı ve önemli noktalar" class="tour-detail-mapdesc" value="${detail.mapDescription || ''}" />
             </div>
           </div>

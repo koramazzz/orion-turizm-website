@@ -671,7 +671,7 @@
         title: 'Kapadokya Kaşifi',
         subtitle: 'Uçhisar, Göreme ve vadilerin büyüleyici dünyası.',
         mapImage: 'https://images.unsplash.com/photo-1468109320504-ff0cd3d2d0fc?q=80&w=1200&auto=format&fit=crop',
-        mapTitle: 'Kapadokya Tur Güzergâhı',
+        mapTitle: 'Kapadokya Gezi Afişi',
         mapDescription: 'Göreme, Uçhisar, Avanos ve vadiler',
         images:[
           'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?q=80&w=800&auto=format&fit=crop',
