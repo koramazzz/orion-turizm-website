@@ -84,6 +84,24 @@
     }catch(e){ console.warn('Seçim listeleri doldurulamadı', e); }
   }
 
+  function setBackgroundImage(element, url) {
+    if (!element || !url) return;
+    element.style.setProperty('--bg', `url("${url}")`);
+  }
+
+  function setImageSource(img, url, options = {}) {
+    if (!img || !url) return;
+
+    if (options.loading) img.loading = options.loading;
+    if (options.fetchPriority) img.fetchPriority = options.fetchPriority;
+    img.decoding = 'async';
+    img.hidden = false;
+    img.onerror = () => {
+      img.hidden = true;
+    };
+    img.src = url;
+  }
+
   // Site içeriklerini sayfaya uygula
   function updatePageWithSiteContent(content) {
     
@@ -109,8 +127,7 @@
     if (content.headerLogo) {
       const headerImgs = document.querySelectorAll('.brand img');
       headerImgs.forEach(img => {
-        img.src = content.headerLogo;
-        img.hidden = false;
+        setImageSource(img, content.headerLogo, { loading: 'eager', fetchPriority: 'high' });
       });
     } else {
       // Header logo yoksa backend storage'dan yükle
@@ -121,8 +138,7 @@
     if (content.contentLogo) {
       const contentImgs = document.querySelectorAll('.contact-logo img');
       contentImgs.forEach(img => {
-        img.src = content.contentLogo;
-        img.hidden = false;
+        setImageSource(img, content.contentLogo, { loading: 'lazy' });
       });
     } else {
       // Content logo yoksa backend storage'dan yükle
@@ -173,7 +189,7 @@
     if (content.aboutImage) {
       const aboutVisuals = document.querySelectorAll('.about-visual');
       aboutVisuals.forEach(visual => {
-        visual.style.setProperty('--bg', `url(${content.aboutImage})`);
+        setBackgroundImage(visual, content.aboutImage);
       });
     } else {
       // About image yoksa backend storage'dan yükle
@@ -197,11 +213,8 @@
 
       if(window.backendManager && typeof window.backendManager.getImageUrl === 'function'){
         var url = window.backendManager.getImageUrl('site-images','logos/header.png');
-        var cacheBuster = '?v=' + Date.now();
         imgs.forEach(function(img){
-          img.src = url + cacheBuster;
-          img.hidden = false;
-          img.onerror = function(){ img.src = url; img.hidden = false; };
+          setImageSource(img, url, { loading: 'eager', fetchPriority: 'high' });
         });
       }
     }catch(e){ /* ignore */ }
@@ -222,11 +235,8 @@
 
       if(window.backendManager && typeof window.backendManager.getImageUrl === 'function'){
         var url = window.backendManager.getImageUrl('site-images','logos/content.png');
-        var cacheBuster = '?v=' + Date.now();
         imgs.forEach(function(img){
-          img.src = url + cacheBuster;
-          img.hidden = false;
-          img.onerror = function(){ img.src = url; img.hidden = false; };
+          setImageSource(img, url, { loading: 'lazy' });
         });
       }
     }catch(e){ /* ignore */ }
@@ -904,34 +914,16 @@
     if (!window.backendManager) return;
 
     try {
-      // Öğrenci Servisi Görseli
-      try {
-        const studentServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/studentService.png');
-        const studentBg = document.querySelector('[data-student-service-bg]');
-        if (studentBg) {
-          const response = await fetch(studentServiceUrl, { method: 'HEAD' });
-          if (response.ok) {
-            studentBg.style.setProperty('--bg', `url('${studentServiceUrl}?v=${Date.now()}')`);
-          }
-        }
-      } catch (error) {
-      }
+      const studentServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/studentService.png');
+      const studentBg = document.querySelector('[data-student-service-bg]');
+      setBackgroundImage(studentBg, studentServiceUrl);
 
-      // Personel Servisi Görseli
-      try {
-        const staffServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/staffService.png');
-        const staffBg = document.querySelector('[data-staff-service-bg]');
-        if (staffBg) {
-          const response = await fetch(staffServiceUrl, { method: 'HEAD' });
-          if (response.ok) {
-            staffBg.style.setProperty('--bg', `url('${staffServiceUrl}?v=${Date.now()}')`);
-          }
-        }
-      } catch (error) {
-      }
+      const staffServiceUrl = window.backendManager.getImageUrl('site-images', 'transport/staffService.png');
+      const staffBg = document.querySelector('[data-staff-service-bg]');
+      setBackgroundImage(staffBg, staffServiceUrl);
 
     } catch (error) {
-      console.error('Taşımacılık görselleri yüklenirken hata:', error);
+      console.warn('Taşımacılık görselleri yüklenirken hata:', error);
     }
   }
 
@@ -941,26 +933,15 @@
     
     try {
       const headerLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/header.png');
-      const cacheBuster = `?v=${Date.now()}`;
       const headerImgs = document.querySelectorAll('.brand img');
       
       if (headerImgs.length > 0) {
-        const response = await fetch(headerLogoUrl, { method: 'HEAD' });
-        if (response.ok) {
-          headerImgs.forEach(img => {
-            img.src = headerLogoUrl + cacheBuster;
-            img.hidden = false;
-            img.onerror = () => {
-              console.warn('Header logo yüklenemedi, cache-buster olmadan deneniyor');
-              img.src = headerLogoUrl;
-            };
-          });
-        } else {
-          console.warn('⚠️ Header logo backend storage\'da bulunamadı');
-        }
+        headerImgs.forEach(img => {
+          setImageSource(img, headerLogoUrl, { loading: 'eager', fetchPriority: 'high' });
+        });
       }
     } catch (error) {
-      console.error('❌ Header logo yükleme hatası:', error);
+      console.warn('Header logo yükleme hatası:', error);
     }
   }
 
@@ -970,26 +951,15 @@
     
     try {
       const contentLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/content.png');
-      const cacheBuster = `?v=${Date.now()}`;
       const contentImgs = document.querySelectorAll('.contact-logo img');
       
       if (contentImgs.length > 0) {
-        const response = await fetch(contentLogoUrl, { method: 'HEAD' });
-        if (response.ok) {
-          contentImgs.forEach(img => {
-            img.src = contentLogoUrl + cacheBuster;
-            img.hidden = false;
-            img.onerror = () => {
-              console.warn('Content logo yüklenemedi, cache-buster olmadan deneniyor');
-              img.src = contentLogoUrl;
-            };
-          });
-        } else {
-          console.warn('⚠️ Content logo backend storage\'da bulunamadı');
-        }
+        contentImgs.forEach(img => {
+          setImageSource(img, contentLogoUrl, { loading: 'lazy' });
+        });
       }
     } catch (error) {
-      console.error('❌ Content logo yükleme hatası:', error);
+      console.warn('Content logo yükleme hatası:', error);
     }
   }
 
@@ -998,39 +968,15 @@
     if (!window.backendManager) return;
     
     try {
-      // Farklı path'leri dene (Supabase storage tablosuna göre)
-      const possiblePaths = [
-        'about/main.png',  // Gerçek path (storage tablosunda görülen)
-      ];
-      
       const aboutVisuals = document.querySelectorAll('.about-visual');
       if (aboutVisuals.length === 0) return;
-      
-      let found = false;
-      
-      for (const path of possiblePaths) {
-        try {
-          const aboutImageUrl = window.backendManager.getImageUrl('site-images', path);
-          
-          const response = await fetch(aboutImageUrl, { method: 'HEAD' });
-          if (response.ok) {
-            const cacheBuster = `?v=${Date.now()}`;
-            aboutVisuals.forEach(visual => {
-              visual.style.setProperty('--bg', `url('${aboutImageUrl}${cacheBuster}')`);
-            });
-            found = true;
-            break;
-          } else {
-          }
-        } catch (error) {
-        }
-      }
-      
-      if (!found) {
-        console.warn('⚠️ About image hiçbir path\'te bulunamadı');
-      }
+
+      const aboutImageUrl = window.backendManager.getImageUrl('site-images', 'about/main.png');
+      aboutVisuals.forEach(visual => {
+        setBackgroundImage(visual, aboutImageUrl);
+      });
     } catch (error) {
-      console.error('❌ About image yükleme hatası:', error);
+      console.warn('About image yükleme hatası:', error);
     }
   }
 
@@ -1041,31 +987,18 @@
     try {
       const carousel = document.querySelector('.carousel');
       if (!carousel) return;
+      if (typeof window.backendManager.listImages !== 'function') return;
       
-      const images = [];
-      
-      // Farklı carousel path'lerini dene (Supabase storage tablosuna göre)
-      const possiblePaths = [
-        'carousel/slide-{i}.png'
-      ];
-      
-      // Carousel görsellerini yükle (sınırsız - slide-0, slide-1, ... 404 gelene kadar)
-      for (let i = 0; i < 50; i++) {
-        let found = false;
-        for (const pathTemplate of possiblePaths) {
-          const path = pathTemplate.replace('{i}', i);
-          try {
-            const carouselUrl = window.backendManager.getImageUrl('site-images', path);
-            const response = await fetch(carouselUrl, { method: 'HEAD' });
-            if (response.ok) {
-              images.push(carouselUrl);
-              found = true;
-              break;
-            }
-          } catch (error) {}
-        }
-        if (!found) break;
-      }
+      const files = await window.backendManager.listImages('site-images', 'carousel');
+      const images = files
+        .map(file => file && file.name ? file.name : '')
+        .filter(name => /^slide-\d+\.(png|jpe?g|webp|avif)$/i.test(name))
+        .sort((a, b) => {
+          const aIndex = Number((a.match(/slide-(\d+)/i) || [])[1] || 0);
+          const bIndex = Number((b.match(/slide-(\d+)/i) || [])[1] || 0);
+          return aIndex - bIndex;
+        })
+        .map(name => window.backendManager.getImageUrl('site-images', `carousel/${name}`));
       
       if (images.length > 0) {
         carousel.setAttribute('data-images', JSON.stringify(images));
@@ -1073,10 +1006,10 @@
         // Carousel'i yeniden başlat
         initializeCarousel();
       } else {
-        console.warn('⚠️ Hiç carousel görseli yüklenemedi');
+        console.warn('Hiç carousel görseli yüklenemedi');
       }
     } catch (error) {
-      console.error('❌ Carousel yükleme hatası:', error);
+      console.warn('Carousel yükleme hatası:', error);
     }
   }
 
@@ -1107,9 +1040,10 @@
       }
       
       
-      // Görselleri önceden yükle (beyaz flash önleme)
-      images.forEach(url => {
+      // İlk geçişlerde beyaz flash olmaması için sadece ilk birkaç görseli önceden yükle.
+      images.slice(0, 2).forEach(url => {
         const img = new Image();
+        img.decoding = 'async';
         img.src = url;
       });
       
@@ -1128,6 +1062,9 @@
           };
           carouselImg.onload = doFadeIn;
           carouselImg.onerror = doFadeIn;
+          carouselImg.decoding = 'async';
+          carouselImg.loading = 'eager';
+          carouselImg.fetchPriority = currentIndex === 0 ? 'high' : 'auto';
           carouselImg.src = nextUrl;
           
           // Dots'ları güncelle

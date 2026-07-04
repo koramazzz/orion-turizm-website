@@ -5,9 +5,11 @@ const GOOGLE_API_KEY = 'AIzaSyBevPK4xCzOBYGSD9qA30pgO66iuWP0MoA';
 const PLACE_ID = 'ChIJvWf3BwCzzBQR_-5n57A9DNs';
 
 class GoogleReviewsWidget {
-  constructor() {
+  constructor(options = {}) {
     this.reviews = [];
-    this.loadReviews();
+    if (options.autoLoad !== false) {
+      this.loadReviews();
+    }
   }
 
   async loadReviews() {
@@ -67,7 +69,9 @@ class GoogleReviewsWidget {
               <div class="review-header">
                 <img src="${review.profile_photo_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(review.author_name) + '&background=7a1c86&color=fff&size=128'}" 
                      alt="${review.author_name}" 
-                     class="review-avatar" />
+                     class="review-avatar"
+                     loading="lazy"
+                     decoding="async" />
                 <div class="review-info">
                   <h4 class="review-author">${review.author_name}</h4>
                   <div class="review-stars">
@@ -195,7 +199,7 @@ window.initGoogleReviews = async function() {
     });
 
     if (place.reviews && place.reviews.length > 0) {
-      const widget = new GoogleReviewsWidget();
+      const widget = new GoogleReviewsWidget({ autoLoad: false });
       // Yeni API formatını eski formata çevir
       const formattedReviews = place.reviews.map(review => ({
         rating: review.rating,
@@ -207,18 +211,38 @@ window.initGoogleReviews = async function() {
       widget.renderReviews(formattedReviews);
     } else {
       console.warn('Yorum bulunamadı');
-      const widget = new GoogleReviewsWidget();
+      const widget = new GoogleReviewsWidget({ autoLoad: false });
       widget.showFallbackReviews();
     }
   } catch (error) {
     console.error('Google Places API hatası:', error);
-    const widget = new GoogleReviewsWidget();
+    const widget = new GoogleReviewsWidget({ autoLoad: false });
     widget.showFallbackReviews();
   }
 };
 
-// Sayfa yüklendiğinde başlat
-document.addEventListener('DOMContentLoaded', () => {
-  const widget = new GoogleReviewsWidget();
-});
+function startGoogleReviewsOnce() {
+  if (window.__googleReviewsStarted) return;
+  window.__googleReviewsStarted = true;
+  new GoogleReviewsWidget();
+}
 
+// Yorumlar bölümü yaklaştığında başlat
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('googleReviewsContainer');
+  if (!container) return;
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        startGoogleReviewsOnce();
+      }
+    }, { rootMargin: '350px 0px' });
+
+    observer.observe(container);
+    setTimeout(startGoogleReviewsOnce, 6000);
+  } else {
+    setTimeout(startGoogleReviewsOnce, 2500);
+  }
+});

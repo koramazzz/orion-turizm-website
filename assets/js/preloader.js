@@ -21,7 +21,7 @@ class PreloaderSystem {
     if (this.isInitialized) return;
     
     const startTime = Date.now();
-    const maxLoadTime = 8000; // 8 saniye maksimum yükleme süresi
+    const maxLoadTime = 2200; // İlk ekranı backend yüzünden uzun süre bekletme
     
     try {
       
@@ -30,32 +30,36 @@ class PreloaderSystem {
         await this.waitForBackendManager();
       }
 
-      // Timeout ile temel verileri yükle
       const loadPromise = this.preloadEssentialData();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Yükleme zaman aşımı')), maxLoadTime)
+      const safeLoadPromise = loadPromise.catch(error => {
+        console.warn('Temel veri arka planda yüklenemedi:', error);
+        return 'failed';
+      });
+
+      const timeoutPromise = new Promise(resolve =>
+        setTimeout(() => resolve('timeout'), maxLoadTime)
       );
 
-      await Promise.race([loadPromise, timeoutPromise]);
+      await Promise.race([safeLoadPromise, timeoutPromise]);
       
       this.isInitialized = true;
-      const loadTime = Date.now() - startTime;
       
       // Sayfa içeriğini göster
       this.showPageContent();
       
       // Arka planda diğer verileri yükle
-      this.preloadSecondaryData();
+      if (window.backendManager) {
+        this.preloadSecondaryData();
+      }
       
     } catch (error) {
       const loadTime = Date.now() - startTime;
       console.error(`Preloader başlatma hatası (${loadTime}ms):`, error);
-      
-      // Hata durumunda da sayfayı göster (maksimum 3 saniye bekle)
-      if (loadTime < 3000) {
-        setTimeout(() => this.showPageContent(), 3000 - loadTime);
-      } else {
-        this.showPageContent();
+
+      this.isInitialized = true;
+      this.showPageContent();
+      if (window.backendManager) {
+        this.preloadSecondaryData();
       }
     }
   }
@@ -63,7 +67,7 @@ class PreloaderSystem {
   /**
    * Backend manager'ın yüklenmesini bekle
    */
-  async waitForBackendManager(maxWait = 5000) {
+  async waitForBackendManager(maxWait = 2000) {
     const startTime = Date.now();
     
     while (!window.backendManager && (Date.now() - startTime) < maxWait) {

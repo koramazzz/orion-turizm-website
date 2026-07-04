@@ -2026,16 +2026,16 @@ class ContentUpdater {
         toursGrid.innerHTML = '';
         tourData.forEach(tour => {
           const tourId = window.normalizeTourId(tour.link || tour.id);
-          // Supabase Storage'dan görsel URL'i al (cache-busting ile)
+          // Supabase Storage'dan görsel URL'i al
           const imageSrc = window.backendManager 
-            ? `${window.backendManager.getImageUrl('tour-images', `tours/${tourId}/main.png`)}?v=${Date.now()}`
+            ? window.backendManager.getImageUrl('tour-images', `tours/${tourId}/main.png`)
             : (tour.image || '');
           
           const tourCard = document.createElement('article');
           tourCard.className = 'card tour-card';
           tourCard.setAttribute('data-tour-id', tourId); // Görsel yükleme için gerekli
           tourCard.innerHTML = `
-            <img src="${imageSrc}" alt="${tour.name}" loading="lazy" />
+            <img src="${imageSrc}" alt="${tour.name}" loading="lazy" decoding="async" />
             <div class="card-content">
               <h3>${tour.name}</h3>
               <p>${tour.description}</p>
@@ -2298,19 +2298,21 @@ class ContentUpdater {
       return;
     }
 
-    // Header Logo (cache-busting ile)
+    // Header Logo
     try {
       const headerLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/header.png');
-      const cacheBuster = `?v=${Date.now()}`;
       const headerLogos = document.querySelectorAll('.brand img, header img[alt*="logo"], .logo img');
       
       if (headerLogos.length > 0) {
         headerLogos.forEach(img => {
-          img.src = headerLogoUrl + cacheBuster;
+          img.decoding = 'async';
+          img.loading = 'eager';
+          img.fetchPriority = 'high';
+          img.hidden = false;
           img.onerror = () => {
-            console.warn('Header logo yüklenemedi, cache-buster olmadan deneniyor');
-            img.src = headerLogoUrl; // Cache-buster olmadan tekrar dene
+            img.hidden = true;
           };
+          img.src = headerLogoUrl;
         });
       }
     } catch (error) {
@@ -2634,6 +2636,9 @@ window.sanitizeImageUrl = window.sanitizeImageUrl || function(url = '') {
 window.withSafeCacheBuster = window.withSafeCacheBuster || function(url = '') {
   const cleanUrl = window.sanitizeImageUrl(url);
   if (!cleanUrl) return '';
+  const isAdminPage = window.location.pathname.includes('admin.html');
+  if (!isAdminPage) return cleanUrl;
+
   const isHttpOrRelative = /^https?:\/\//i.test(cleanUrl) || cleanUrl.startsWith('/');
   if (!isHttpOrRelative) return cleanUrl;
   return `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
@@ -2681,7 +2686,7 @@ window.watchImageQuality = window.watchImageQuality || function(img, context = {
     const renderedHeight = img.clientHeight || img.height || 0;
     if (!renderedWidth || !renderedHeight) return;
 
-    if (img.naturalWidth < renderedWidth * 1.25 || img.naturalHeight < renderedHeight * 1.25) {
+    if (img.naturalWidth < renderedWidth || img.naturalHeight < renderedHeight) {
       window.logImageWarning('Görsel düşük çözünürlükte olabilir', {
         ...getContext(),
         natural: `${img.naturalWidth}x${img.naturalHeight}`,
@@ -2739,7 +2744,7 @@ window.watchBackgroundImageQuality = window.watchBackgroundImageQuality || funct
     const renderedHeight = element.clientHeight || 0;
     if (!renderedWidth || !renderedHeight) return;
 
-    if (probe.naturalWidth < renderedWidth * 1.25 || probe.naturalHeight < renderedHeight * 1.25) {
+    if (probe.naturalWidth < renderedWidth || probe.naturalHeight < renderedHeight) {
       window.logImageWarning('Arka plan görseli düşük çözünürlükte olabilir', {
         section: context.section || element.id || element.className || 'sayfa',
         natural: `${probe.naturalWidth}x${probe.naturalHeight}`,
@@ -3028,10 +3033,6 @@ if (!window.location.pathname.includes('admin.html')) {
       ContentUpdater.loadTourDetailPage();
     }
 
-    setTimeout(() => {
-      if (typeof window.auditPageImages === 'function') window.auditPageImages();
-    }, 1500);
-    
     // Gizli admin erişimi: Ctrl+Shift+A
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
