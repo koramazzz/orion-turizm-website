@@ -20,6 +20,33 @@ CREATE TABLE IF NOT EXISTS admin_settings (
 -- Admin ayarları için RLS
 ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 
+-- Admin yetki listesi
+-- Supabase Auth kullanıcısını oluşturduktan sonra kendi admin e-postanızı bu tabloya ekleyin:
+-- INSERT INTO admin_users (user_id, email)
+-- SELECT id, email FROM auth.users WHERE email = 'admin@example.com'
+-- ON CONFLICT (user_id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS admin_users (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.admin_users
+    WHERE user_id = auth.uid()
+       OR lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
+$$;
+
 -- Varsayılan admin şifresini ekle (orion2024 - ilk girişte değiştirilecek)
 -- NOT: Bu şifre uygulama ilk açıldığında otomatik hashlenecek
 INSERT INTO admin_settings (key, value) 
@@ -117,21 +144,38 @@ CREATE POLICY "Allow public read access" ON transport_orgs FOR SELECT USING (tru
 CREATE POLICY "Allow public read access" ON form_fields FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON tours FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON media_files FOR SELECT USING (true);
+CREATE POLICY "Allow own admin user read" ON admin_users FOR SELECT USING (auth.uid() = user_id);
 
 -- Form gönderileri için sadece INSERT izni
 CREATE POLICY "Allow public insert" ON form_submissions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow admin read form submissions" ON form_submissions FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin delete form submissions" ON form_submissions FOR DELETE USING (public.is_admin());
 
--- Admin işlemleri için (şimdilik herkese, sonra auth ekleriz)
-CREATE POLICY "Allow all operations" ON site_content FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON transport_orgs FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON form_fields FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON tours FOR ALL USING (true);
-CREATE POLICY "Allow all operations" ON media_files FOR ALL USING (true);
+-- Admin işlemleri sadece admin_users listesinde olan Supabase Auth kullanıcılarına açıktır
+CREATE POLICY "Allow admin insert" ON site_content FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin update" ON site_content FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin delete" ON site_content FOR DELETE USING (public.is_admin());
 
--- Admin settings için özel politika (sadece okuma ve güncelleme)
-CREATE POLICY "Allow read admin settings" ON admin_settings FOR SELECT USING (true);
-CREATE POLICY "Allow update admin settings" ON admin_settings FOR UPDATE USING (true);
-CREATE POLICY "Allow insert admin settings" ON admin_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow admin insert" ON transport_orgs FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin update" ON transport_orgs FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin delete" ON transport_orgs FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "Allow admin insert" ON form_fields FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin update" ON form_fields FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin delete" ON form_fields FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "Allow admin insert" ON tours FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin update" ON tours FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin delete" ON tours FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "Allow admin insert" ON media_files FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin update" ON media_files FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin delete" ON media_files FOR DELETE USING (public.is_admin());
+
+-- Admin settings için özel politika
+CREATE POLICY "Allow admin read admin settings" ON admin_settings FOR SELECT USING (public.is_admin());
+CREATE POLICY "Allow admin update admin settings" ON admin_settings FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Allow admin insert admin settings" ON admin_settings FOR INSERT WITH CHECK (public.is_admin());
 
 -- Varsayılan veriler ekle
 INSERT INTO site_content (key, value) VALUES
@@ -243,8 +287,8 @@ ALTER TABLE image_metadata ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read image metadata" ON image_metadata
   FOR SELECT USING (true);
 
-CREATE POLICY "Authenticated manage image metadata" ON image_metadata
-  FOR ALL USING (true);
+CREATE POLICY "Admin manage image metadata" ON image_metadata
+  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- =====================================================
 -- POPUP SİSTEMİ TABLOSU
@@ -281,8 +325,14 @@ CREATE POLICY "Public read popup settings" ON popup_settings
   FOR SELECT USING (true);
 
 -- Admin işlemleri için
-CREATE POLICY "Allow all operations popup" ON popup_settings
-  FOR ALL USING (true);
+CREATE POLICY "Allow admin insert popup" ON popup_settings
+  FOR INSERT WITH CHECK (public.is_admin());
+
+CREATE POLICY "Allow admin update popup" ON popup_settings
+  FOR UPDATE USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Allow admin delete popup" ON popup_settings
+  FOR DELETE USING (public.is_admin());
 
 -- Popup views için politikalar
 CREATE POLICY "Allow public insert popup views" ON popup_views
@@ -304,5 +354,4 @@ CREATE TRIGGER update_popup_settings_updated_at BEFORE UPDATE ON popup_settings 
 INSERT INTO popup_settings (is_active, title, content, link_url, link_text, show_once) VALUES
 (false, 'Hoş Geldiniz!', 'Sakarya Orion Turizm''e hoş geldiniz. En güncel tur paketlerimizi keşfedin.', '#', 'Turları İncele', true)
 ON CONFLICT DO NOTHING;
-
 

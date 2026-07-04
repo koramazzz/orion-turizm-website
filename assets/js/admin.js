@@ -608,7 +608,10 @@ class AdminPanel {
       // Backend'e kaydet (eğer varsa)
       if (window.backendManager) {
         try {
-          await window.backendManager.saveSiteContent(contentData);
+          const siteSaved = await window.backendManager.saveSiteContent(contentData);
+          if (!siteSaved) {
+            throw new Error('Site içerikleri kaydedilemedi');
+          }
           
           // Taşımacılık kurumlarını ve kurum açıklamalarını birlikte kaydet
           // (açıklamalar artık syncTransportOrgs içinde description alanına gömülüyor)
@@ -2061,9 +2064,10 @@ class ContentUpdater {
     }
 
     // Form alanlarını güncelle
+    let formData = [];
     if (content.formFields) {
       const fields = content.formFields.split('\n').filter(line => line.trim());
-      const formData = fields.map(fieldJson => {
+      formData = fields.map(fieldJson => {
         try {
           return JSON.parse(fieldJson);
         } catch (e) {
@@ -2071,140 +2075,18 @@ class ContentUpdater {
           return null;
         }
       }).filter(field => field);
-      
-      // localStorage kaldırıldı
-      
-      // Routes sayfasındaki formu güncelle (sadece routes ve both hedefli alanlar)
-      const routesFormElement = document.querySelector('#toursForm');
-      if (routesFormElement && formData.length > 0) {
-        const routesFormGrid = routesFormElement.querySelector('.form-grid');
-        if (routesFormGrid) {
-          routesFormGrid.innerHTML = '';
-          const routesFields = formData.filter(field => field.target === 'turlar' || field.target === 'both');
-          routesFields.forEach(field => {
-            const label = document.createElement('label');
-            if (field.type === 'textarea') {
-              label.className = 'full';
-            }
-            
-            let inputHTML = '';
-            if (field.type === 'select') {
-              const options = field.options.split(',').map(opt => opt.trim()).filter(opt => opt);
-              inputHTML = `
-                <select name="${field.label.toLowerCase().replace(/\s+/g, '_')}" ${field.required ? 'required' : ''}>
-                  ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                </select>
-              `;
-            } else if (field.type === 'textarea') {
-              inputHTML = `
-                <textarea name="${field.label.toLowerCase().replace(/\s+/g, '_')}" rows="3" placeholder="${field.placeholder}" ${field.required ? 'required' : ''}></textarea>
-              `;
-            } else if (field.type === 'number' && field.label.includes('Lüksü')) {
-              // Özel range slider için
-              inputHTML = `
-                <div class="range-wrap">
-                  <input type="range" min="0" max="10" step="1" value="5" name="${field.label.toLowerCase().replace(/\s+/g, '_')}" oninput="this.nextElementSibling.textContent = this.value" />
-                  <output>5</output>
-                </div>
-              `;
-            } else {
-              inputHTML = `
-                <input type="${field.type}" name="${field.label.toLowerCase().replace(/\s+/g, '_')}" placeholder="${field.placeholder}" ${field.required ? 'required' : ''} />
-              `;
-            }
-            
-            label.innerHTML = `
-              ${field.label}
-              ${inputHTML}
-            `;
-            routesFormGrid.appendChild(label);
-          });
-          
-          // Range slider'lar için event listener'ları ekle
-          routesFormGrid.querySelectorAll('.range-wrap input[type="range"]').forEach(rangeInput => {
-            rangeInput.addEventListener('input', function() {
-              this.nextElementSibling.textContent = this.value;
-            });
-          });
-          
-          // main.js'teki range updater'ı da çalıştır
-          if (typeof window !== 'undefined' && window.document) {
-            routesFormGrid.querySelectorAll('.range-wrap').forEach(function(w){
-              var r = w.querySelector('input[type="range"]');
-              var o = w.querySelector('output');
-              if(!r || !o) return; 
-              o.textContent = r.value;
-              r.addEventListener('input', function(){ o.textContent = r.value; });
-            });
-          }
-        }
+    }
+
+    if (formData.length === 0 && window.backendManager && typeof window.backendManager.getFormFields === 'function') {
+      try {
+        formData = await window.backendManager.getFormFields() || [];
+      } catch (error) {
+        console.warn('Form alanları form_fields tablosundan yüklenemedi:', error);
       }
-      
-      // Özel rota sayfasındaki formu güncelle (sadece custom ve both hedefli alanlar)
-      const customFormElement = document.querySelector('#customRouteForm');
-      if (customFormElement && formData.length > 0) {
-        const customFormGrid = customFormElement.querySelector('.form-grid');
-        if (customFormGrid) {
-          customFormGrid.innerHTML = '';
-          const customFields = formData.filter(field => field.target === 'custom' || field.target === 'both');
-          customFields.forEach(field => {
-            const label = document.createElement('label');
-            if (field.type === 'textarea') {
-              label.className = 'full';
-            }
-            
-            let inputHTML = '';
-            if (field.type === 'select') {
-              const options = field.options.split(',').map(opt => opt.trim()).filter(opt => opt);
-              inputHTML = `
-                <select name="${field.label.toLowerCase().replace(/\s+/g, '_')}" ${field.required ? 'required' : ''}>
-                  ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                </select>
-              `;
-            } else if (field.type === 'textarea') {
-              inputHTML = `
-                <textarea name="${field.label.toLowerCase().replace(/\s+/g, '_')}" rows="3" placeholder="${field.placeholder}" ${field.required ? 'required' : ''}></textarea>
-              `;
-            } else if (field.type === 'number' && field.label.includes('Lüksü')) {
-              // Özel range slider için
-              inputHTML = `
-                <div class="range-wrap">
-                  <input type="range" min="0" max="10" step="1" value="5" name="${field.label.toLowerCase().replace(/\s+/g, '_')}" oninput="this.nextElementSibling.textContent = this.value" />
-                  <output>5</output>
-                </div>
-              `;
-            } else {
-              inputHTML = `
-                <input type="${field.type}" name="${field.label.toLowerCase().replace(/\s+/g, '_')}" placeholder="${field.placeholder}" ${field.required ? 'required' : ''} />
-              `;
-            }
-            
-            label.innerHTML = `
-              ${field.label}
-              ${inputHTML}
-            `;
-            customFormGrid.appendChild(label);
-          });
-          
-          // Range slider'lar için event listener'ları ekle
-          customFormGrid.querySelectorAll('.range-wrap input[type="range"]').forEach(rangeInput => {
-            rangeInput.addEventListener('input', function() {
-              this.nextElementSibling.textContent = this.value;
-            });
-          });
-          
-          // main.js'teki range updater'ı da çalıştır
-          if (typeof window !== 'undefined' && window.document) {
-            customFormGrid.querySelectorAll('.range-wrap').forEach(function(w){
-              var r = w.querySelector('input[type="range"]');
-              var o = w.querySelector('output');
-              if(!r || !o) return; 
-              o.textContent = r.value;
-              r.addEventListener('input', function(){ o.textContent = r.value; });
-            });
-          }
-        }
-      }
+    }
+
+    if (formData.length > 0) {
+      this.renderDynamicForms(formData);
     }
     
     // İçerikler yüklendi, göster (fade-in)
@@ -2220,6 +2102,121 @@ class ContentUpdater {
     dynamicSections.forEach(section => {
       section.style.opacity = '0';
       section.style.transition = 'opacity 0.3s ease-in-out';
+    });
+  }
+
+  static renderDynamicForms(formData) {
+    this.renderFieldsForForm('#toursForm', formData.filter(field => field.target === 'turlar' || field.target === 'both'));
+    this.renderFieldsForForm('#customRouteForm', formData.filter(field => field.target === 'custom' || field.target === 'both'));
+  }
+
+  static renderFieldsForForm(formSelector, fields) {
+    const form = document.querySelector(formSelector);
+    if (!form || !fields || fields.length === 0) return;
+
+    const grid = form.querySelector('.form-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    fields.forEach(field => {
+      grid.appendChild(this.createFormField(field));
+    });
+    this.bindRangeOutputs(grid);
+  }
+
+  static createFormField(field) {
+    const label = document.createElement('label');
+    const fieldLabel = String(field.label || '').trim();
+    const fieldType = field.type || 'text';
+    const fieldName = fieldLabel.toLowerCase().replace(/\s+/g, '_');
+
+    if (fieldType === 'textarea') {
+      label.className = 'full';
+    }
+
+    label.appendChild(document.createTextNode(fieldLabel));
+
+    if (fieldType === 'select') {
+      const select = document.createElement('select');
+      select.name = fieldName;
+      select.required = Boolean(field.required);
+
+      this.parseFieldOptions(field.options).forEach(optionText => {
+        const option = document.createElement('option');
+        option.value = optionText;
+        option.textContent = optionText;
+        select.appendChild(option);
+      });
+
+      label.appendChild(select);
+      return label;
+    }
+
+    if (fieldType === 'textarea') {
+      const textarea = document.createElement('textarea');
+      textarea.name = fieldName;
+      textarea.rows = 3;
+      textarea.placeholder = field.placeholder || '';
+      textarea.required = Boolean(field.required);
+      label.appendChild(textarea);
+      return label;
+    }
+
+    if (fieldType === 'number' && fieldLabel.includes('Lüksü')) {
+      const rangeWrap = document.createElement('div');
+      rangeWrap.className = 'range-wrap';
+
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = '0';
+      input.max = '10';
+      input.step = '1';
+      input.value = '5';
+      input.name = fieldName;
+
+      const output = document.createElement('output');
+      output.textContent = input.value;
+
+      rangeWrap.appendChild(input);
+      rangeWrap.appendChild(output);
+      label.appendChild(rangeWrap);
+      return label;
+    }
+
+    const input = document.createElement('input');
+    input.type = fieldType;
+    input.name = fieldName;
+    input.placeholder = field.placeholder || '';
+    input.required = Boolean(field.required);
+    label.appendChild(input);
+    return label;
+  }
+
+  static parseFieldOptions(options) {
+    if (Array.isArray(options)) {
+      return options.map(String).map(opt => opt.trim()).filter(Boolean);
+    }
+
+    const raw = String(options || '').trim();
+    if (!raw) return [];
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map(String).map(opt => opt.trim()).filter(Boolean);
+      }
+    } catch (error) {}
+
+    return raw.split(',').map(opt => opt.trim()).filter(Boolean);
+  }
+
+  static bindRangeOutputs(container) {
+    container.querySelectorAll('.range-wrap').forEach(function(w){
+      var r = w.querySelector('input[type="range"]');
+      var o = w.querySelector('output');
+      if(!r || !o) return;
+      o.textContent = r.value;
+      r.addEventListener('input', function(){ o.textContent = r.value; });
     });
   }
 
@@ -2256,18 +2253,6 @@ class ContentUpdater {
       toursGrid.innerHTML = '';
     }
     
-    
-    // Routes form bölümünü temizle
-    const routesFormGrid = document.querySelector('#toursForm .form-grid');
-    if (routesFormGrid) {
-      routesFormGrid.innerHTML = '';
-    }
-    
-    // Custom form bölümünü temizle
-    const customFormGrid = document.querySelector('#customRouteForm .form-grid');
-    if (customFormGrid) {
-      customFormGrid.innerHTML = '';
-    }
   }
 
   static addScrollButtons(scrollSelector, leftBtnSelector, rightBtnSelector, singleItem = false) {
@@ -3165,10 +3150,22 @@ async function handlePopupImageUpload(input) {
 
     // Önizleme göster
     const preview = document.getElementById('popupImagePreview');
-    preview.innerHTML = `
-      <img src="${publicUrl}" alt="Popup görseli" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid var(--brand-50);">
-      <button onclick="removePopupImage()" class="btn btn-outline btn-sm" style="margin-left: 10px;">Görseli Kaldır</button>
-    `;
+    preview.innerHTML = '';
+
+    const previewImage = document.createElement('img');
+    previewImage.src = publicUrl;
+    previewImage.alt = 'Popup görseli';
+    previewImage.style.cssText = 'max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid var(--brand-50);';
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'btn btn-outline btn-sm';
+    removeButton.style.marginLeft = '10px';
+    removeButton.textContent = 'Görseli Kaldır';
+    removeButton.addEventListener('click', removePopupImage);
+
+    preview.appendChild(previewImage);
+    preview.appendChild(removeButton);
 
     document.getElementById('popupImageText').textContent = 'Görsel Değiştir';
     
@@ -3307,23 +3304,59 @@ function previewPopup() {
     correctedLinkUrl = 'https://' + linkUrl;
   }
 
-  // Popup HTML'i oluştur
-  const popupHtml = `
-    <div id="popupPreview" class="popup-overlay">
-      <div class="popup-container">
-        <button class="popup-close" onclick="closePopupPreview()" aria-label="Popup'ı kapat">&times;</button>
-        <div class="popup-content-wrapper">
-          ${imageUrl ? `<img src="${imageUrl}" alt="Popup görseli" class="popup-image">` : ''}
-          ${title ? `<h3 class="popup-title">${title}</h3>` : ''}
-          ${content ? `<p class="popup-content">${content}</p>` : ''}
-          ${correctedLinkUrl ? `<a href="${correctedLinkUrl}" target="_blank" class="popup-link">${linkText}</a>` : ''}
-        </div>
-      </div>
-    </div>
-  `;
+  const popup = document.createElement('div');
+  popup.id = 'popupPreview';
+  popup.className = 'popup-overlay';
 
-  // Popup'ı göster
-  document.body.insertAdjacentHTML('beforeend', popupHtml);
+  const container = document.createElement('div');
+  container.className = 'popup-container';
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'popup-close';
+  closeButton.setAttribute('aria-label', 'Popup\'ı kapat');
+  closeButton.textContent = '×';
+  closeButton.addEventListener('click', closePopupPreview);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'popup-content-wrapper';
+
+  if (imageUrl) {
+    const image = document.createElement('img');
+    image.src = imageUrl;
+    image.alt = 'Popup görseli';
+    image.className = 'popup-image';
+    wrapper.appendChild(image);
+  }
+
+  if (title) {
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'popup-title';
+    titleEl.textContent = title;
+    wrapper.appendChild(titleEl);
+  }
+
+  if (content) {
+    const contentEl = document.createElement('p');
+    contentEl.className = 'popup-content';
+    contentEl.textContent = content;
+    wrapper.appendChild(contentEl);
+  }
+
+  if (correctedLinkUrl) {
+    const link = document.createElement('a');
+    link.href = correctedLinkUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.className = 'popup-link';
+    link.textContent = linkText;
+    wrapper.appendChild(link);
+  }
+
+  container.appendChild(closeButton);
+  container.appendChild(wrapper);
+  popup.appendChild(container);
+  document.body.appendChild(popup);
 }
 
 // Popup önizlemesini kapat

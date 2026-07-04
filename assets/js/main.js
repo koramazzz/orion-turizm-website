@@ -554,10 +554,17 @@
         if (formId === 'toursForm') formType = 'toursForm';
         else if (formId === 'customRouteForm') formType = 'customRouteForm';
         
+        let submissionSaved = false;
+        let emailSent = false;
+
         // Backend'e kaydet
         if (window.backendManager) {
           try {
-            await window.backendManager.saveFormSubmission(formType, data);
+            const submission = await window.backendManager.saveFormSubmission(formType, data);
+            submissionSaved = Boolean(submission);
+            if (!submissionSaved) {
+              console.warn('Form backend\'e kaydedilemedi: kayıt sonucu boş döndü.');
+            }
           } catch (error) {
             console.warn('Form backend\'e kaydedilemedi:', error);
           }
@@ -599,16 +606,24 @@
               })
             });
 
+            if (!emailResponse.ok) {
+              throw new Error(`Web3Forms HTTP ${emailResponse.status}`);
+            }
+
             const emailResult = await emailResponse.json();
             if (!emailResult.success) {
-              console.error('Mail gönderilemedi:', emailResult);
+              throw new Error(emailResult.message || 'Web3Forms mail gönderimini reddetti.');
             }
+            emailSent = true;
           } else {
             console.warn('Web3Forms anahtarı ayarlanmamış — mail gönderilmedi.');
           }
         } catch (emailError) {
           console.error('Mail gönderim hatası:', emailError);
-          // Mail hatası form gönderimini engellemez
+        }
+
+        if (!submissionSaved && !emailSent) {
+          throw new Error('Form hiçbir kanala iletilemedi.');
         }
         
         // Başarı mesajı
@@ -1318,23 +1333,59 @@
       linkUrl = 'https://' + linkUrl;
     }
 
-    // Popup HTML'i oluştur
-    const popupHtml = `
-      <div id="sitePopup" class="popup-overlay">
-        <div class="popup-container">
-          <button class="popup-close" onclick="closeSitePopup()" aria-label="Popup'ı kapat">&times;</button>
-          <div class="popup-content-wrapper">
-            ${popupData.image_url ? `<img src="${popupData.image_url}" alt="Popup görseli" class="popup-image">` : ''}
-            ${popupData.title ? `<h3 class="popup-title">${popupData.title}</h3>` : ''}
-            ${popupData.content ? `<p class="popup-content">${popupData.content}</p>` : ''}
-            ${linkUrl ? `<a href="${linkUrl}" target="_blank" class="popup-link">${popupData.link_text || 'Detay'}</a>` : ''}
-          </div>
-        </div>
-      </div>
-    `;
+    const popup = document.createElement('div');
+    popup.id = 'sitePopup';
+    popup.className = 'popup-overlay';
 
-    // Popup'ı sayfaya ekle
-    document.body.insertAdjacentHTML('beforeend', popupHtml);
+    const container = document.createElement('div');
+    container.className = 'popup-container';
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'popup-close';
+    closeButton.type = 'button';
+    closeButton.setAttribute('aria-label', 'Popup\'ı kapat');
+    closeButton.textContent = '×';
+    closeButton.addEventListener('click', closeSitePopup);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'popup-content-wrapper';
+
+    if (popupData.image_url) {
+      const image = document.createElement('img');
+      image.src = popupData.image_url;
+      image.alt = 'Popup görseli';
+      image.className = 'popup-image';
+      wrapper.appendChild(image);
+    }
+
+    if (popupData.title) {
+      const title = document.createElement('h3');
+      title.className = 'popup-title';
+      title.textContent = popupData.title;
+      wrapper.appendChild(title);
+    }
+
+    if (popupData.content) {
+      const content = document.createElement('p');
+      content.className = 'popup-content';
+      content.textContent = popupData.content;
+      wrapper.appendChild(content);
+    }
+
+    if (linkUrl) {
+      const link = document.createElement('a');
+      link.href = linkUrl;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.className = 'popup-link';
+      link.textContent = popupData.link_text || 'Detay';
+      wrapper.appendChild(link);
+    }
+
+    container.appendChild(closeButton);
+    container.appendChild(wrapper);
+    popup.appendChild(container);
+    document.body.appendChild(popup);
 
     // ESC tuşu ile kapatma
     document.addEventListener('keydown', function(e) {
