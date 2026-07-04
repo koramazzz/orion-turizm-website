@@ -334,15 +334,13 @@ CREATE POLICY "Allow admin update popup" ON popup_settings
 CREATE POLICY "Allow admin delete popup" ON popup_settings
   FOR DELETE USING (public.is_admin());
 
--- Popup views için politikalar
-CREATE POLICY "Allow public insert popup views" ON popup_views
-  FOR INSERT WITH CHECK (true);
+-- Popup views eski kayıtları sadece admin tarafından okunur/silinebilir.
+-- Yeni public popup takibi tarayıcı cookie'si ile yapılır.
+CREATE POLICY "Allow admin read popup views" ON popup_views
+  FOR SELECT USING (public.is_admin());
 
-CREATE POLICY "Allow public read popup views" ON popup_views
-  FOR SELECT USING (true);
-
-CREATE POLICY "Allow public update popup views" ON popup_views
-  FOR UPDATE USING (true);
+CREATE POLICY "Allow admin delete popup views" ON popup_views
+  FOR DELETE USING (public.is_admin());
 
 -- Popup settings trigger
 CREATE TRIGGER update_popup_settings_updated_at BEFORE UPDATE ON popup_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -354,4 +352,3 @@ CREATE TRIGGER update_popup_settings_updated_at BEFORE UPDATE ON popup_settings 
 INSERT INTO popup_settings (is_active, title, content, link_url, link_text, show_once) VALUES
 (false, 'Hoş Geldiniz!', 'Sakarya Orion Turizm''e hoş geldiniz. En güncel tur paketlerimizi keşfedin.', '#', 'Turları İncele', true)
 ON CONFLICT DO NOTHING;
-

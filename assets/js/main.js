@@ -1105,93 +1105,46 @@
   // POPUP SİSTEMİ FONKSİYONLARI
   // =====================================================
 
-  // Kullanıcının IP adresini al
-  async function getUserIP() {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      return data.ip;
-    } catch (error) {
-      console.warn('IP adresi alınamadı, fallback kullanılıyor');
-      // Fallback: rastgele bir değer (aynı tarayıcıda aynı kalacak)
-      return 'unknown-' + Math.random().toString(36).substr(2, 9);
-    }
+  const POPUP_VIEW_COOKIE = 'orion_popup_viewed_at';
+
+  function getCookieValue(name) {
+    const prefix = `${name}=`;
+    const cookies = document.cookie ? document.cookie.split('; ') : [];
+    const cookie = cookies.find(item => item.startsWith(prefix));
+    return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : '';
+  }
+
+  function setCookieValue(name, value, maxAgeSeconds) {
+    const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=${maxAgeSeconds}; Path=/; SameSite=Lax${secureFlag}`;
   }
 
   // Popup görüntüleme geçmişini kontrol et
-  async function checkPopupViewHistory() {
+  function checkPopupViewHistory(showOnce = false) {
     try {
-      if (!window.supabase || typeof window.supabase.from !== 'function') {
-        return false;
-      }
-      
-      const userIP = await getUserIP();
-      
-      if (!userIP || userIP === 'unknown') {
-        return false;
-      }
-      
-      const { data, error } = await window.supabase
-        .from('popup_views')
-        .select('viewed_at')
-        .eq('ip_address', userIP)
-        .single();
-
-      if (error) {
+      const viewedAt = Number(getCookieValue(POPUP_VIEW_COOKIE));
+      if (!viewedAt) {
         return false;
       }
 
-      if (!data) {
-        return false;
-      }
-
-      const lastViewed = new Date(data.viewed_at);
-      const now = new Date();
-      const hoursDiff = (now - lastViewed) / (1000 * 60 * 60);
-
-      const showOnce = window.popupShowOnce;
-      
       if (showOnce) {
         return true;
-      } else {
-        return hoursDiff < 3;
       }
+
+      return Date.now() - viewedAt < 3 * 60 * 60 * 1000;
     } catch (error) {
       return false;
     }
   }
 
-  // Popup görüntüleme kaydını oluştur/güncelle
-  async function recordPopupView() {
+  // Popup görüntüleme kaydını tarayıcıda tut
+  function recordPopupView() {
     try {
-      if (!window.supabase || typeof window.supabase.from !== 'function') {
-        return;
-      }
-      
-      const userIP = await getUserIP();
-      
-      if (!userIP || userIP === 'unknown') {
-        return;
-      }
-      
-      const userAgent = navigator.userAgent;
-      
-      const { data, error } = await window.supabase
-        .from('popup_views')
-        .upsert({
-          ip_address: userIP,
-          user_agent: userAgent,
-          viewed_at: new Date().toISOString()
-        }, {
-          onConflict: 'ip_address'
-        })
-        .select();
-
-      if (error) {
-        console.error('Popup görüntüleme kaydı oluşturulurken hata:', error);
-      }
+      const showOnce = Boolean(window.popupShowOnce);
+      const maxAgeSeconds = showOnce ? 180 * 24 * 60 * 60 : 3 * 60 * 60;
+      setCookieValue(POPUP_VIEW_COOKIE, String(Date.now()), maxAgeSeconds);
     } catch (error) {
-      console.error('Popup görüntüleme kaydı oluşturulurken hata:', error);
+      console.warn('Popup görüntüleme kaydı tarayıcıda tutulamadı:', error);
     }
   }
 
@@ -1225,7 +1178,7 @@
 
       // Popup görüntüleme geçmişini kontrol et
       try {
-        const hasViewed = await checkPopupViewHistory();
+        const hasViewed = checkPopupViewHistory(Boolean(data.show_once));
         
         if (data.show_once) {
           // Sadece bir kez göster
