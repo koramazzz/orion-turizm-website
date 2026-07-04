@@ -740,7 +740,24 @@ a{color:inherit;text-decoration:none}
 
 /* Partners */
 .logo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:16px}
+.logo-grid > .partners-container{grid-column:1/-1}
 .logo-pill{display:flex;align-items:center;justify-content:center;border:1px solid #e6d9eb;border-radius:999px;padding:16px 20px;color:var(--brand);background:linear-gradient(180deg,#fff 0%,#fdfdfe 30%,#fbfafc 70%,#f9f7fb 100%);box-shadow:0 6px 18px rgba(122,28,134,.06);font-weight:600;transition:all .2s;min-height:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 200px;width:200px;cursor:pointer}
+.logo-pill-text{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;will-change:transform}
+.partner-item.is-overflowing .logo-pill:hover,
+.partner-item.is-overflowing .logo-pill:focus{
+  justify-content:flex-start;
+}
+.partner-item.is-overflowing .logo-pill:hover .logo-pill-text,
+.partner-item.is-overflowing .logo-pill:focus .logo-pill-text{
+  max-width:none;
+  overflow:visible;
+  text-overflow:clip;
+  animation:logo-pill-marquee var(--scroll-duration,4s) ease-in-out infinite alternate;
+}
+@keyframes logo-pill-marquee{
+  from{transform:translateX(0)}
+  to{transform:translateX(calc(-1 * var(--scroll-distance, 0px)))}
+}
 .logo-pill:hover{border-color:#d8c7df;box-shadow:0 10px 24px rgba(122,28,134,.12);transform:translateY(-2px);background:linear-gradient(180deg,#f9f7fb 0%,#f5f0f7 30%,#f0e8f3 70%,#e8dceb 100%)}
 .logo-pill:active{transform:translateY(0);box-shadow:0 4px 12px rgba(122,28,134,.15);background:var(--brand);color:#fff;border-color:var(--brand)}
 
@@ -751,9 +768,8 @@ a{color:inherit;text-decoration:none}
 .partners-scroll::-webkit-scrollbar-track{background:transparent}
 .partners-scroll::-webkit-scrollbar-thumb{background:var(--brand-50);border-radius:3px}
 .partners-scroll::-webkit-scrollbar-thumb:hover{background:var(--brand-600)}
-.partner-item{flex:0 0 200px;width:200px}
+.partner-item{flex:0 0 200px;width:200px;position:relative}
 .partner-item .logo-pill{width:200px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:60px;padding:16px 20px}
-
 /* Tur galerisi - tam 4 görsel sığar, fazlası kaydırmalı */
 .tour-gallery-scroll{display:flex;gap:12px}
 .tour-gallery-scroll img{flex:0 0 calc(25% - 9px);width:calc(25% - 9px);height:220px;object-fit:cover;border-radius:12px;cursor:pointer;transition:transform 0.2s}
@@ -829,11 +845,14 @@ a{color:inherit;text-decoration:none}
 
 @media (max-width: 768px) {
   .logo-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .partner-item { width: calc(50% - 6px); min-width: 140px; }
+  .partner-item { flex-basis: 180px; width: 180px; min-width: 180px; }
+  .partner-item .logo-pill{width:180px}
 }
 
 @media (max-width: 480px) {
   .logo-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .partner-item { flex-basis: 160px; width: 160px; min-width: 160px; }
+  .partner-item .logo-pill{width:160px;padding:14px 16px}
 }
 
 /* Kaydırma butonları */
@@ -911,6 +930,18 @@ a{color:inherit;text-decoration:none}
   border:1px solid rgba(122,28,134,0.1);
   box-shadow:0 2px 8px rgba(122,28,134,0.05);
   transition:all 0.3s ease;
+}
+
+.info-note p{
+  margin:0;
+}
+
+.info-note p + p{
+  margin-top:8px;
+}
+
+#customRouteForm{
+  margin-top:28px;
 }
 
 .info-note:hover{
@@ -1897,8 +1928,8 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
   background: #fff;
   border: 1.5px solid var(--border, #e5e7eb);
   border-radius: 16px;
-  padding: 20px 16px 16px;
-  width: 180px;
+  padding: 24px 20px 20px;
+  width: 260px;
   box-shadow: 0 2px 12px rgba(0,0,0,.06);
   transition: box-shadow .2s, transform .2s;
 }
@@ -1949,6 +1980,11 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
   text-decoration: none;
   text-align: center;
   display: block;
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   transition: color .15s;
 }
 
@@ -1958,8 +1994,8 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
 
 @media (max-width: 480px) {
   .org-contact-display-card {
-    width: calc(50% - 10px);
-    min-width: 140px;
+    width: 100%;
+    min-width: 0;
   }
 }
 

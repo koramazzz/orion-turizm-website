@@ -268,6 +268,88 @@
     return Math.max(1, visibleItems); // En az 1 öğe
   }
 
+  function renderPillScroller(container, items, scrollId) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'partners-container';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'partners-scroll';
+    scroll.id = scrollId;
+
+    items.forEach(item => {
+      const partnerItem = document.createElement('div');
+      partnerItem.className = 'partner-item';
+      partnerItem.dataset.label = item.name;
+
+      const link = document.createElement('a');
+      link.className = 'logo-pill';
+      link.href = item.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.title = item.name;
+
+      const text = document.createElement('span');
+      text.className = 'logo-pill-text';
+      text.textContent = item.name;
+
+      link.appendChild(text);
+      partnerItem.appendChild(link);
+      scroll.appendChild(partnerItem);
+    });
+
+    const buttons = document.createElement('div');
+    buttons.className = 'scroll-buttons';
+
+    const leftButton = document.createElement('button');
+    leftButton.className = 'scroll-btn';
+    leftButton.id = `${scrollId}Left`;
+    leftButton.type = 'button';
+    leftButton.setAttribute('aria-label', 'Önceki kurum');
+    leftButton.textContent = '‹';
+
+    const rightButton = document.createElement('button');
+    rightButton.className = 'scroll-btn';
+    rightButton.id = `${scrollId}Right`;
+    rightButton.type = 'button';
+    rightButton.setAttribute('aria-label', 'Sonraki kurum');
+    rightButton.textContent = '›';
+
+    buttons.append(leftButton, rightButton);
+    wrapper.append(scroll, buttons);
+    container.appendChild(wrapper);
+
+    addScrollButtons(`#${scrollId}`, `#${scrollId}Left`, `#${scrollId}Right`);
+    requestAnimationFrame(() => updatePillOverflow(wrapper));
+  }
+
+  function updatePillOverflow(root = document) {
+    root.querySelectorAll('.partner-item').forEach(item => {
+      const pill = item.querySelector('.logo-pill');
+      const text = item.querySelector('.logo-pill-text');
+      if (!pill || !text) return;
+
+      const pillStyle = getComputedStyle(pill);
+      const availableWidth = pill.clientWidth
+        - parseFloat(pillStyle.paddingLeft || '0')
+        - parseFloat(pillStyle.paddingRight || '0');
+      const overflowAmount = Math.ceil(text.scrollWidth - availableWidth);
+      const isOverflowing = overflowAmount > 2;
+
+      item.classList.toggle('is-overflowing', isOverflowing);
+      if (isOverflowing) {
+        const distance = overflowAmount + 10;
+        item.style.setProperty('--scroll-distance', `${distance}px`);
+        item.style.setProperty('--scroll-duration', `${Math.min(Math.max(distance / 22, 3), 8)}s`);
+      } else {
+        item.style.removeProperty('--scroll-distance');
+        item.style.removeProperty('--scroll-duration');
+      }
+    });
+  }
+
   // Hizmet verdiğimiz kurumları güncelle
   function updateServiceOrganizations(serviceOrgsData) {
     if (!serviceOrgsData) return;
@@ -286,39 +368,7 @@
       return;
     }
 
-    // Ekran boyutuna göre kaç öğenin sığacağını hesapla
-    const visibleItems = calculateVisibleItems();
-    
-    // Dinamik kaydırma için container oluştur (görünür öğe sayısından fazla varsa)
-    if (serviceOrgData.length > visibleItems) {
-      container.innerHTML = `
-        <div class="partners-container">
-          <div class="partners-scroll" id="serviceOrgsScroll">
-            ${serviceOrgData.map(org => `
-              <div class="partner-item">
-                <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
-                  ${org.name}
-                </a>
-              </div>
-            `).join('')}
-          </div>
-          <div class="scroll-buttons">
-            <button class="scroll-btn" id="serviceOrgsScrollLeft">‹</button>
-            <button class="scroll-btn" id="serviceOrgsScrollRight">›</button>
-          </div>
-        </div>
-      `;
-      
-      // Kaydırma butonları için event listener'lar ekle
-      addScrollButtons('#serviceOrgsScroll', '#serviceOrgsScrollLeft', '#serviceOrgsScrollRight');
-    } else {
-      // Az sayıda kurum varsa normal flex düzen kullan
-      container.innerHTML = serviceOrgData.map(org => `
-        <a class="logo-pill" href="${org.url}" target="_blank" rel="noopener" title="${org.name}">
-          ${org.name}
-        </a>
-      `).join('');
-    }
+    renderPillScroller(container, serviceOrgData, 'serviceOrgsScroll');
   }
 
   // Kaydırma butonları için yardımcı fonksiyon
@@ -366,6 +416,7 @@
     window.addEventListener('resize', function() {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(function() {
+        updatePillOverflow(document);
         // Sayfa içeriğini yeniden yükle (responsive düzen için)
         if (window.preloader && window.preloader.isInitialized) {
           loadBackendData();
