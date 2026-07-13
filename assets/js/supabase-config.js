@@ -450,7 +450,7 @@
       if (error) throw error;
       
       // Turları ayrıca tours tablosuna da kaydet
-      if (contentData.toursList) {
+      if (Object.prototype.hasOwnProperty.call(contentData, 'toursList')) {
         await this.saveTours(contentData.toursList);
       }
       
@@ -497,13 +497,21 @@
   // Tüm taşımacılık kurumlarını akıllı senkronizasyon ile kaydet
   async saveTransportOrgs(orgsArray) {
     try {
+      const nextOrgs = Array.isArray(orgsArray)
+        ? orgsArray.filter(org => org && String(org.name || '').trim())
+        : [];
+
       // Mevcut kurumları getir
       const existingOrgs = await this.getTransportOrgs();
-      const existingOrgNames = existingOrgs.map(org => org.name);
-      const newOrgNames = orgsArray.map(org => org.name);
+      const newOrgIds = new Set(nextOrgs.map(org => String(org.id || '').trim()).filter(Boolean));
+      const newOrgNames = new Set(nextOrgs.map(org => String(org.name || '').trim()));
 
       // Silinecek kurumları bul (mevcut olup yeni listede olmayan)
-      const orgsToDelete = existingOrgs.filter(org => !newOrgNames.includes(org.name));
+      const orgsToDelete = existingOrgs.filter(org => {
+        const id = String(org.id || '').trim();
+        const name = String(org.name || '').trim();
+        return !(id && newOrgIds.has(id)) && !newOrgNames.has(name);
+      });
       
       // Silinecek kurumları sil
       if (orgsToDelete.length > 0) {
@@ -518,23 +526,22 @@
       }
 
       // Yeni/güncellenecek kurumları işle
-      if (orgsArray && orgsArray.length > 0) {
+      if (nextOrgs.length > 0) {
         const results = [];
         
-        for (const org of orgsArray) {
-          const existingOrg = existingOrgs.find(existing => existing.name === org.name);
+        for (const org of nextOrgs) {
+          const orgId = String(org.id || '').trim();
+          const orgName = String(org.name || '').trim();
+          const existingOrg = existingOrgs.find(existing => String(existing.id || '') === orgId)
+            || existingOrgs.find(existing => existing.name === orgName);
           
           // Butonlar, metin ve yetkili kişileri 'description' alanında birleşik JSON olarak sakla
           const textDesc = (org.text || '').trim();
-          const hasButtons = org.buttons && org.buttons.length > 0;
-          const hasContacts = org.contacts && org.contacts.length > 0;
           const orgData = {
-            name: org.name,
+            name: orgName,
             type: org.type,
             logo_url: org.logo || null,
-            description: (hasButtons || textDesc || hasContacts)
-              ? JSON.stringify({ v: 2, buttons: org.buttons || [], text: textDesc, contacts: org.contacts || [] })
-              : null
+            description: JSON.stringify({ v: 2, buttons: org.buttons || [], text: textDesc, contacts: org.contacts || [] })
           };
 
           if (existingOrg) {
@@ -975,7 +982,14 @@
             if (parsed && parsed.v === 2) existingButtons = parsed.buttons || [];
           } catch (_) { /* ham metin, buton yok */ }
         }
-        const newDescription = JSON.stringify({ v: 2, buttons: existingButtons, text: description });
+        let existingContacts = [];
+        if (existing.data && existing.data.description) {
+          try {
+            const parsed = JSON.parse(existing.data.description);
+            if (parsed && parsed.v === 2) existingContacts = parsed.contacts || [];
+          } catch (_) { /* ham metin, kişi yok */ }
+        }
+        const newDescription = JSON.stringify({ v: 2, buttons: existingButtons, text: description, contacts: existingContacts });
         const { error } = await this.supabase
           .from('transport_orgs')
           .update({ description: newDescription })

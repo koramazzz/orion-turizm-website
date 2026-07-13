@@ -1194,6 +1194,9 @@
         if(!container) return;
         const item = document.createElement('div');
         item.className = 'list-item org-card';
+        item.dataset.orgId = data && data.id ? String(data.id) : '';
+        item.dataset.originalName = data && data.name ? String(data.name) : '';
+        item.dataset.orgDescription = data && data.text ? String(data.text) : '';
 
         item.innerHTML = `
           <!-- Başlık (her zaman görünür) -->
@@ -1270,9 +1273,15 @@
         if(data){
           item.querySelector('.org-name').value = data.name || '';
           item.querySelector('.org-type').value = data.type || 'school';
+          item.dataset.originalName = data.name || '';
+          item.dataset.orgDescription = data.text || data.description || '';
+          if (data.name && (data.text || data.description)) {
+            window.orgDescriptionsStore[data.name] = data.text || data.description || '';
+          }
           if(data.logo){
             const p = item.querySelector('.org-logo-preview');
             p.src = withSafeCacheBuster(data.logo);
+            p.dataset.url = data.logo;
             p.style.display = 'block';
             const mini = item.querySelector('.org-mini-logo');
             mini.src = withSafeCacheBuster(data.logo);
@@ -1458,6 +1467,7 @@
                 
                 // Cache-busting ile görseli güncelle
                 pv.src = withSafeCacheBuster(publicUrl);
+                pv.dataset.url = publicUrl;
                 // Mini logo'yu da güncelle
                 const mini = item.querySelector('.org-mini-logo');
                 if(mini){ mini.src = withSafeCacheBuster(publicUrl); mini.style.display = 'block'; }

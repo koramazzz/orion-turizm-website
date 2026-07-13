@@ -612,6 +612,7 @@ class AdminPanel {
           if (!siteSaved) {
             throw new Error('Site içerikleri kaydedilemedi');
           }
+          await this.verifySiteContentSaved(contentData);
           
           // Taşımacılık kurumlarını ve kurum açıklamalarını birlikte kaydet
           // (açıklamalar artık syncTransportOrgs içinde description alanına gömülüyor)
@@ -758,7 +759,7 @@ class AdminPanel {
           if (backendContent.transportServicesList) {
             try {
               const services = JSON.parse(backendContent.transportServicesList);
-              if (Array.isArray(services) && services.length > 0) {
+              if (Array.isArray(services)) {
                 this.loadTransportServices(services);
               } else {
                 if (typeof window._addDefaultTransportServicesIfEmpty === 'function') window._addDefaultTransportServicesIfEmpty();
@@ -848,6 +849,152 @@ class AdminPanel {
     }
   }
 
+  cleanStoredImageUrl(url = '') {
+    const value = String(url || '').trim();
+    if (!value || value.startsWith('data:image/svg')) return '';
+    return value.replace(/[?&]v=\d+$/, '').split('?v=')[0];
+  }
+
+  parseTransportOrgDescription(description = '') {
+    const empty = { buttons: [], text: '', contacts: [] };
+    const trimmed = String(description || '').trim();
+    if (!trimmed) return empty;
+
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return {
+          buttons: Array.isArray(parsed.buttons) ? parsed.buttons : [],
+          text: typeof parsed.text === 'string' ? parsed.text : '',
+          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : []
+        };
+      } catch (error) {
+        return empty;
+      }
+    }
+
+    if (trimmed.startsWith('[')) {
+      try {
+        const buttons = JSON.parse(trimmed);
+        return {
+          buttons: Array.isArray(buttons) ? buttons : [],
+          text: '',
+          contacts: []
+        };
+      } catch (error) {
+        return empty;
+      }
+    }
+
+    return { buttons: [], text: trimmed, contacts: [] };
+  }
+
+  normalizeTransportButton(button = {}) {
+    return {
+      label: String(button.label || '').trim(),
+      url: String(button.url || '').trim(),
+      style: String(button.style || 'outline').trim() || 'outline'
+    };
+  }
+
+  normalizeTransportContact(contact = {}) {
+    return {
+      photo: this.cleanStoredImageUrl(contact.photo || ''),
+      name: String(contact.name || '').trim(),
+      title: String(contact.title || '').trim(),
+      phone: String(contact.phone || '').trim(),
+      email: String(contact.email || '').trim()
+    };
+  }
+
+  normalizeTransportOrg(org = {}) {
+    const parsed = this.parseTransportOrgDescription(org.description || '');
+    const buttons = Array.isArray(org.buttons) ? org.buttons : parsed.buttons;
+    const contacts = Array.isArray(org.contacts) ? org.contacts : parsed.contacts;
+    const text = typeof org.text === 'string' ? org.text : parsed.text;
+
+    return {
+      id: String(org.id || '').trim(),
+      name: String(org.name || '').trim(),
+      type: String(org.type || 'school').trim() || 'school',
+      logo: this.cleanStoredImageUrl(org.logo || org.logo_url || ''),
+      text: String(text || '').trim(),
+      buttons: buttons
+        .map(button => this.normalizeTransportButton(button))
+        .filter(button => button.label || button.url),
+      contacts: contacts
+        .map(contact => this.normalizeTransportContact(contact))
+        .filter(contact => contact.name || contact.phone || contact.email || contact.title || contact.photo)
+    };
+  }
+
+  async verifySiteContentSaved(expectedContent) {
+    if (!window.backendManager || typeof window.backendManager.getSiteContent !== 'function') return;
+
+    const savedContent = await window.backendManager.getSiteContent();
+    if (!savedContent) {
+      throw new Error('Site içerikleri kaydedildi gibi görünüyor ama backend doğrulaması boş döndü');
+    }
+
+    const mismatchedKeys = Object.keys(expectedContent).filter(key => {
+      return String(savedContent[key] ?? '') !== String(expectedContent[key] ?? '');
+    });
+
+    if (mismatchedKeys.length > 0) {
+      throw new Error(`Kaydetme doğrulaması başarısız: ${mismatchedKeys.slice(0, 3).join(', ')} alanları backend'de beklenen değerle eşleşmedi`);
+    }
+  }
+
+  async verifyTransportOrgsSaved(expectedOrgs) {
+    if (!window.backendManager || typeof window.backendManager.getTransportOrgs !== 'function') return;
+
+    const savedOrgs = await window.backendManager.getTransportOrgs();
+    const expected = expectedOrgs.map(org => this.normalizeTransportOrg(org));
+    const actual = savedOrgs.map(org => this.normalizeTransportOrg(org));
+
+    if (expected.length !== actual.length) {
+      throw new Error(`Taşımacılık kurumları doğrulanamadı: ${expected.length} kayıt beklenirken ${actual.length} kayıt bulundu`);
+    }
+
+    const actualById = new Map(actual.filter(org => org.id).map(org => [org.id, org]));
+    const actualByName = new Map(actual.map(org => [org.name, org]));
+
+    expected.forEach(expectedOrg => {
+      const actualOrg = (expectedOrg.id && actualById.get(expectedOrg.id)) || actualByName.get(expectedOrg.name);
+      if (!actualOrg) {
+        throw new Error(`Taşımacılık kurumu kaydı bulunamadı: ${expectedOrg.name}`);
+      }
+
+      const comparableExpected = { ...expectedOrg, id: '' };
+      const comparableActual = { ...actualOrg, id: '' };
+      if (JSON.stringify(comparableExpected) !== JSON.stringify(comparableActual)) {
+        throw new Error(`Taşımacılık kurumu kaydedildi ama doğrulama eşleşmedi: ${expectedOrg.name}`);
+      }
+    });
+  }
+
+  async verifyFormFieldsSaved(expectedFields) {
+    if (!window.backendManager || typeof window.backendManager.getFormFields !== 'function') return;
+
+    const normalizeField = (field = {}, index = 0) => ({
+      label: String(field.label || '').trim(),
+      placeholder: String(field.placeholder || '').trim(),
+      type: String(field.type || 'text').trim(),
+      options: String(field.options || '').trim(),
+      target: String(field.target || 'both').trim(),
+      required: Boolean(field.required),
+      order_index: Number(field.order_index ?? index) || 0
+    });
+
+    const savedFields = await window.backendManager.getFormFields();
+    const expected = expectedFields.map(normalizeField);
+    const actual = savedFields.map(normalizeField);
+
+    if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+      throw new Error('Form alanları kaydedildi ama backend doğrulaması eşleşmedi');
+    }
+  }
+
   // transportOrgs verisini kaydet (saveChanges çağrısına gömülüdür)
   getTransportOrgsData() {
     const container = document.getElementById('transportOrgsList');
@@ -855,6 +1002,8 @@ class AdminPanel {
     
     const items = Array.from(container.querySelectorAll(':scope > .list-item'));
     const result = items.map(it => {
+      const id = it.dataset.orgId || '';
+      const originalName = it.dataset.originalName || '';
       const name = it.querySelector('.org-name')?.value.trim() || '';
       const type = it.querySelector('.org-type')?.value || 'school';
       
@@ -868,13 +1017,17 @@ class AdminPanel {
       });
       
       // Logo URL'sini cache-busting parametresiz al
-      let logo = it.querySelector('.org-logo-preview')?.src || '';
-      if (logo && logo.includes('?v=')) {
-        logo = logo.split('?v=')[0];
-      }
+      const logoPreview = it.querySelector('.org-logo-preview');
+      const logo = this.cleanStoredImageUrl(logoPreview?.dataset.url || logoPreview?.src || '');
       
       if(!name) return null;
-      const text = (window.orgDescriptionsStore?.[name] || '').trim();
+      let text = (window.orgDescriptionsStore?.[name] || '').trim();
+      if (!text && originalName && originalName !== name) {
+        text = (window.orgDescriptionsStore?.[originalName] || it.dataset.orgDescription || '').trim();
+        if (text && window.orgDescriptionsStore) {
+          window.orgDescriptionsStore[name] = text;
+        }
+      }
 
       // Yetkili kişileri oku
       const contacts = [];
@@ -890,7 +1043,7 @@ class AdminPanel {
         if (cName || cPhone) contacts.push({ photo: cleanPhoto, name: cName, title: cTitle, phone: cPhone, email: cEmail });
       });
 
-      return { name, type, buttons, logo, text, contacts };
+      return { id, name, type, buttons, logo, text, contacts };
     }).filter(Boolean);
     
     return result;
@@ -902,9 +1055,13 @@ class AdminPanel {
     
     try {
       const orgs = this.getTransportOrgsData();
-      if (orgs.length === 0) return;
+      const orgNames = orgs.map(org => org.name);
+      if (new Set(orgNames).size !== orgNames.length) {
+        throw new Error('Taşımacılık kurumlarında aynı isim birden fazla kez kullanılamaz');
+      }
       
       await window.backendManager.saveTransportOrgs(orgs);
+      await this.verifyTransportOrgsSaved(orgs);
       
     } catch (error) {
       console.error('Taşımacılık kurumları kaydedilemedi:', error);
@@ -1100,7 +1257,13 @@ class AdminPanel {
         }
       });
 
+      const fieldLabels = fields.map(field => field.label);
+      if (new Set(fieldLabels).size !== fieldLabels.length) {
+        throw new Error('Form alanlarında aynı ad birden fazla kez kullanılamaz');
+      }
+
       await window.backendManager.saveFormFields(fields);
+      await this.verifyFormFieldsSaved(fields);
       
     } catch (error) {
       console.error('Form alanları backend\'e kaydedilemedi:', error);
@@ -1125,19 +1288,24 @@ class AdminPanel {
       // 1. {v:2, buttons, text} birleşik format (yeni)
       // 2. [...] salt buton dizisi (eski format)
       // 3. Hiçbiri yoksa eski URL sütunlarından oluştur (geriye dönük uyumluluk)
-      let buttons = [];
+      const parsedDescription = this.parseTransportOrgDescription(org.description || '');
+      let buttons = parsedDescription.buttons || [];
+      let hasStructuredDescription = false;
       if (org.description) {
         const trimmed = org.description.trim();
         if (trimmed.startsWith('{')) {
           try {
             const parsed = JSON.parse(trimmed);
+            hasStructuredDescription = Boolean(
+              parsed && (parsed.v === 2 || Array.isArray(parsed.buttons) || Object.prototype.hasOwnProperty.call(parsed, 'text') || Array.isArray(parsed.contacts))
+            );
             buttons = parsed.buttons || [];
           } catch(e) {}
         } else if (trimmed.startsWith('[')) {
           try { buttons = JSON.parse(trimmed); } catch(e) {}
         }
       }
-      if (!buttons.length) {
+      if (!buttons.length && !hasStructuredDescription) {
         const legacy = [
           { label: '📄 Sözleşme İndir', url: org.contract_url || '', style: 'outline' },
           { label: '🌐 Vita Web Paneli',  url: org.vita_web_url || '',  style: 'outline' },
@@ -1148,20 +1316,19 @@ class AdminPanel {
       }
 
       // Yetkili kişileri de çöz
-      let contacts = [];
-      if (org.description) {
-        try {
-          const parsed = JSON.parse(org.description.trim());
-          if (parsed && Array.isArray(parsed.contacts)) contacts = parsed.contacts;
-        } catch(e) {}
-      }
+      let contacts = parsedDescription.contacts || [];
+      const text = parsedDescription.text || '';
+      if (!window.orgDescriptionsStore) window.orgDescriptionsStore = {};
+      if (org.name && text) window.orgDescriptionsStore[org.name] = text;
 
       const orgData = {
+        id: org.id,
         name: org.name,
         type: org.type,
         logo: org.logo_url,
         buttons,
-        contacts
+        contacts,
+        text
       };
       
       // addTransportOrg global fonksiyonu ile DOM'a ekle (logo upload ve butonlar dahil)
@@ -1169,6 +1336,10 @@ class AdminPanel {
         addTransportOrg(orgData);
       }
     });
+
+    if (typeof window.refreshOrgDescDropdown === 'function') {
+      window.refreshOrgDescDropdown();
+    }
   }
 
   // Form alanlarını admin panele yükle
