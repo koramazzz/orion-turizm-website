@@ -102,6 +102,41 @@
     img.src = url;
   }
 
+  function updateContactDetails(content = {}) {
+    const setContactValue = (key, value) => {
+      const text = String(value || '').trim();
+      if (!text) return;
+      document.querySelectorAll(`[data-contact="${key}"]`).forEach(element => {
+        element.textContent = text;
+      });
+    };
+
+    setContactValue('phone', content.phoneNumber || content.contactPhone);
+    setContactValue('email', content.emailAddress || content.contactEmail);
+    setContactValue('address', content.address || content.contactAddress);
+    setContactValue('agency-name', content.agencyName);
+    setContactValue('tursab-document-no', content.tursabDocumentNo);
+
+    const instagramValue = String(content.instagramLink || content.contactInstagram || '').trim();
+    if (!instagramValue) return;
+
+    let username = instagramValue.replace(/^@/, '');
+    let href = instagramValue;
+
+    if (instagramValue.includes('instagram.com/')) {
+      username = instagramValue.split('instagram.com/')[1].split(/[/?#]/)[0];
+    } else if (!/^https?:\/\//i.test(instagramValue)) {
+      href = `https://instagram.com/${username}`;
+    }
+
+    document.querySelectorAll('[data-contact="instagram"]').forEach(element => {
+      element.textContent = `@${username || 'orion_turizm'}`;
+      if (element.tagName === 'A') {
+        element.href = href;
+      }
+    });
+  }
+
   // Site içeriklerini sayfaya uygula
   function updatePageWithSiteContent(content) {
     
@@ -145,37 +180,7 @@
       loadContentLogoFromStorage();
     }
 
-    // İletişim bilgileri
-    if (content.contactPhone) {
-      const phoneElements = document.querySelectorAll('[data-contact="phone"]');
-      phoneElements.forEach(el => {
-        el.textContent = content.contactPhone;
-      });
-    }
-
-    if (content.contactEmail) {
-      const emailElements = document.querySelectorAll('[data-contact="email"]');
-      emailElements.forEach(el => {
-        el.textContent = content.contactEmail;
-      });
-    }
-
-    if (content.contactAddress) {
-      const addressElements = document.querySelectorAll('[data-contact="address"]');
-      addressElements.forEach(el => {
-        el.textContent = content.contactAddress;
-      });
-    }
-
-    if (content.contactInstagram) {
-      const instagramElements = document.querySelectorAll('[data-contact="instagram"]');
-      instagramElements.forEach(el => {
-        el.textContent = content.contactInstagram;
-        if (el.tagName === 'A') {
-          el.href = `https://instagram.com/${content.contactInstagram.replace('@', '')}`;
-        }
-      });
-    }
+    updateContactDetails(content);
 
     // Hakkımızda metni
     if (content.aboutText) {

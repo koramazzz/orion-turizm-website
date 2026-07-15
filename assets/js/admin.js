@@ -589,6 +589,8 @@ class AdminPanel {
         phoneNumber: getFieldValue('phoneNumber'),
         emailAddress: getFieldValue('emailAddress'),
         address: getFieldValue('address'),
+        agencyName: getFieldValue('agencyName'),
+        tursabDocumentNo: getFieldValue('tursabDocumentNo'),
         instagramLink: getFieldValue('instagramLink'),
         transportServicesList: JSON.stringify(this.getTransportServicesData()),
         serviceOrganizations: serviceOrgsData,
@@ -1960,27 +1962,7 @@ class ContentUpdater {
       }
     }
 
-    // İletişim bilgilerini güncelle
-    const contactList = document.querySelector('.contact-list');
-    if (contactList && (content.phoneNumber || content.emailAddress || content.address || content.instagramLink)) {
-      const items = contactList.querySelectorAll('li');
-      if (items[0] && content.phoneNumber) {
-        items[0].innerHTML = `<strong>Telefon:</strong> ${content.phoneNumber}`;
-      }
-      if (items[1] && content.emailAddress) {
-        items[1].innerHTML = `<strong>E-posta:</strong> ${content.emailAddress}`;
-      }
-      if (items[2] && content.address) {
-        items[2].innerHTML = `<strong>Adres:</strong> ${content.address}`;
-      }
-      if (items[3] && content.instagramLink) {
-        // Instagram linkinden kullanıcı adını çıkar
-        const instagramUsername = content.instagramLink.includes('instagram.com/') 
-          ? content.instagramLink.split('instagram.com/')[1].replace('/', '')
-          : 'orion_turizm';
-        items[3].innerHTML = `<strong>Instagram:</strong> <a href="${content.instagramLink}" target="_blank" rel="noopener">@${instagramUsername}</a>`;
-      }
-    }
+    this.updateContactDetails(content);
 
     // Taşımacılık hizmetlerini güncelle
     const transportCards = document.querySelectorAll('.transport-card .card-content');
@@ -2162,6 +2144,41 @@ class ContentUpdater {
     dynamicSections.forEach(section => {
       section.style.opacity = '0';
       section.style.transition = 'opacity 0.3s ease-in-out';
+    });
+  }
+
+  static updateContactDetails(content = {}) {
+    const setContactValue = (key, value) => {
+      const text = String(value || '').trim();
+      if (!text) return;
+      document.querySelectorAll(`[data-contact="${key}"]`).forEach(element => {
+        element.textContent = text;
+      });
+    };
+
+    setContactValue('phone', content.phoneNumber || content.contactPhone);
+    setContactValue('email', content.emailAddress || content.contactEmail);
+    setContactValue('address', content.address || content.contactAddress);
+    setContactValue('agency-name', content.agencyName);
+    setContactValue('tursab-document-no', content.tursabDocumentNo);
+
+    const instagramValue = String(content.instagramLink || content.contactInstagram || '').trim();
+    if (!instagramValue) return;
+
+    let username = instagramValue.replace(/^@/, '');
+    let href = instagramValue;
+
+    if (instagramValue.includes('instagram.com/')) {
+      username = instagramValue.split('instagram.com/')[1].split(/[/?#]/)[0];
+    } else if (!/^https?:\/\//i.test(instagramValue)) {
+      href = `https://instagram.com/${username}`;
+    }
+
+    document.querySelectorAll('[data-contact="instagram"]').forEach(element => {
+      element.textContent = `@${username || 'orion_turizm'}`;
+      if (element.tagName === 'A') {
+        element.href = href;
+      }
     });
   }
 
