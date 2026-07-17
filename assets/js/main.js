@@ -171,7 +171,7 @@
 
     // Sayfa içi logo (iletişim bölümündeki logo)
     if (content.contentLogo) {
-      const contentImgs = document.querySelectorAll('.contact-logo img');
+      const contentImgs = document.querySelectorAll('[data-content-logo]');
       contentImgs.forEach(img => {
         setImageSource(img, content.contentLogo, { loading: 'lazy' });
       });
@@ -228,7 +228,7 @@
   // İçerik logosu (iletişim bölümü) için storage tabanlı yedek
   function ensureContentLogoFallback(){
     try{
-      const imgs = document.querySelectorAll('.contact-logo img');
+      const imgs = document.querySelectorAll('[data-content-logo]');
       if(!imgs || imgs.length === 0) return;
 
       var needsFallback = false;
@@ -1007,7 +1007,7 @@
     
     try {
       const contentLogoUrl = window.backendManager.getImageUrl('site-images', 'logos/content.png');
-      const contentImgs = document.querySelectorAll('.contact-logo img');
+      const contentImgs = document.querySelectorAll('[data-content-logo]');
       
       if (contentImgs.length > 0) {
         contentImgs.forEach(img => {
