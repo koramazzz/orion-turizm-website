@@ -1,45 +1,16 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="origin" />
     <title>Hazır Rotalar - Orion Turizm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/png" href="favicon.png">
-    <style>
-      /* Loading Overlay - FOUC Önleme */
-      #pageLoader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 99999;
-        transition: opacity 0.3s ease-in-out;
-      }
-      #pageLoader.loaded {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .loader-spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #007bff;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
   </head>
   <body>
     <!-- Loading Screen -->
@@ -172,13 +143,9 @@
     </div>
 
     </div> <!-- End page-content -->
-
-    <!-- Supabase CDN -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+    <script src="https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+    <script src="assets/js/common.js"></script>
     <script src="assets/js/supabase-config.js"></script>
-    <script src="assets/js/preloader.js"></script>
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/admin.js"></script>
+    <script src="assets/js/site.js"></script>
   </body>
 </html>

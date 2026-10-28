@@ -47,11 +47,7 @@ AS $$
   );
 $$;
 
--- Varsayılan admin şifresini ekle (orion2024 - ilk girişte değiştirilecek)
--- NOT: Bu şifre uygulama ilk açıldığında otomatik hashlenecek
-INSERT INTO admin_settings (key, value) 
-VALUES ('adminPassword', 'orion2024') 
-ON CONFLICT (key) DO NOTHING;
+-- Not: Admin girişi Supabase Auth ile yapılır; bu tabloda şifre tutulmaz.
 
 -- 2. Taşımacılık Kurumları Tablosu
 CREATE TABLE transport_orgs (
@@ -247,20 +243,21 @@ CREATE TRIGGER update_tours_updated_at BEFORE UPDATE ON tours FOR EACH ROW EXECU
 -- 2. tour-images: Tur görselleri ve detay görselleri
 -- 3. transport-images: Taşımacılık kurumu logoları
 
--- Storage policies (Public read, authenticated write)
--- NOT: Bu politikalar Supabase Dashboard > Storage > Policies bölümünden ayarlanmalıdır
+-- Storage policies (Public read, sadece admin yazabilir)
+-- NOT: Okuma politikaları Supabase Dashboard > Storage > Policies bölümünden ayarlanır.
+-- Yazma kısıtlaması için: supabase/migrations/20261029000000_admin_only_storage_writes.sql
 
 -- site-images bucket policies:
 -- Policy 1: Public read
--- Policy 2: Authenticated upload/update/delete
+-- Policy 2: Upload/update/delete sadece admin (is_admin())
 
 -- tour-images bucket policies:
 -- Policy 1: Public read
--- Policy 2: Authenticated upload/update/delete
+-- Policy 2: Upload/update/delete sadece admin (is_admin())
 
 -- transport-images bucket policies:
 -- Policy 1: Public read
--- Policy 2: Authenticated upload/update/delete
+-- Policy 2: Upload/update/delete sadece admin (is_admin())
 
 -- Görsel metadata tablosu (opsiyonel - görsellerin track edilmesi için)
 CREATE TABLE IF NOT EXISTS image_metadata (
