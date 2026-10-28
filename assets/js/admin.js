@@ -278,7 +278,7 @@
       var previousUrl = preview.dataset.url;
       preview.src = await readFileAsDataUrl(file);
       try {
-        var url = await backend().uploadRawFile('transport-images', 'contacts/contact-' + Date.now() + '.' + fileExt(file), file, true);
+        var url = await backend().uploadRawFile('transport-images', 'contacts/contact-' + Date.now() + '.' + fileExt(file), file, true, C.IMAGE_MAX_EDGE.contact);
         preview.src = url;
         preview.dataset.url = url;
       } catch (err) {
@@ -981,7 +981,7 @@
     var file = input.files[0];
     if (!file) return;
     try {
-      showPopupImagePreview(await backend().uploadRawFile('site-images', 'popups/popup-' + Date.now() + '.' + fileExt(file), file, false));
+      showPopupImagePreview(await backend().uploadRawFile('site-images', 'popups/popup-' + Date.now() + '.' + fileExt(file), file, false, C.IMAGE_MAX_EDGE.popup));
     } catch (error) {
       console.error('Görsel yükleme hatası:', error);
       alert('Görsel yüklenirken hata oluştu!');
@@ -1095,6 +1095,8 @@
       $('aboutImageUpload').addEventListener('change', function (e) { self.uploadSiteImage(e, 'aboutImage', function (d) { return backend().uploadAboutImage(d); }, 'Hakkımızda görseli'); });
       $('studentServiceImageUpload').addEventListener('change', function (e) { self.uploadSiteImage(e, 'studentServiceImage', function (d) { return backend().uploadTransportImage(d, 'studentService'); }, 'Taşımacılık görseli'); });
       $('staffServiceImageUpload').addEventListener('change', function (e) { self.uploadSiteImage(e, 'staffServiceImage', function (d) { return backend().uploadTransportImage(d, 'staffService'); }, 'Taşımacılık görseli'); });
+      var optimizeBtn = $('optimizeImages');
+      if (optimizeBtn) optimizeBtn.addEventListener('click', function () { self.optimizeStoredImages(); });
       $('carouselImages').addEventListener('change', function (e) {
         if (e.target.classList.contains('carousel-upload')) self.handleCarouselUpload(e);
       });
@@ -1305,6 +1307,73 @@
       await setIfExists('aboutImage', 'site-images', 'about/main.png');
       await setIfExists('studentServiceImage', 'site-images', 'transport/studentService.png');
       await setIfExists('staffServiceImage', 'site-images', 'transport/staffService.png');
+    }
+
+    /**
+     * Daha önce küçültülmeden yüklenmiş görselleri küçültür.
+     * Orijinaller silinmez: aynı bucket'ta _originals/ klasörüne taşınır,
+     * küçültülmüş hali aynı adla yerine yüklenir (sitedeki adresler değişmez).
+     */
+    async optimizeStoredImages() {
+      var button = $('optimizeImages');
+      var status = $('optimizeImagesStatus');
+      var MIN_BYTES = 300 * 1024; // bundan küçükler zaten hafif
+      var BACKUP = '_originals';
+      if (!confirm('🖼️ GÖRSEL OPTİMİZASYONU\n\nSitedeki büyük görseller küçültülüp yeniden kaydedilecek. ' +
+        'Orijinaller silinmez, her bucket\'ta "' + BACKUP + '" klasörüne taşınır.\n\n' +
+        'İşlem görsel sayısına göre birkaç dakika sürebilir; bitene kadar bu sayfayı kapatmayın.\n\nBaşlatılsın mı?')) return;
+
+      var say = function (text) { status.textContent = text; };
+      button.disabled = true;
+      var stats = { done: 0, skipped: 0, failed: 0, before: 0, after: 0 };
+      var failures = [];
+      try {
+        var jobs = [];
+        for (var bucket of ['site-images', 'tour-images', 'transport-images']) {
+          say('Görseller listeleniyor: ' + bucket + '…');
+          var files = await backend().listAllFiles(bucket, '', [BACKUP]);
+          files.forEach(function (f) {
+            if (f.size >= MIN_BYTES && /^image\/(png|jpe?g|webp)$/i.test(f.mimetype || 'image/png')) jobs.push({ bucket: bucket, path: f.path, size: f.size });
+          });
+        }
+        for (var i = 0; i < jobs.length; i++) {
+          var job = jobs[i];
+          say((i + 1) + ' / ' + jobs.length + ' işleniyor: ' + job.path);
+          try {
+            var response = await fetch(backend().getImageUrl(job.bucket, job.path), { cache: 'no-store' });
+            if (!response.ok) throw new Error('indirilemedi (' + response.status + ')');
+            var original = await response.blob();
+            var name = job.path.split('/').pop();
+            var small = await C.compressImage(original, C.maxEdgeForPath(job.path), name);
+            if (small === original || small.size > original.size * 0.9) { stats.skipped++; continue; }
+
+            await backend().moveFile(job.bucket, job.path, BACKUP + '/' + job.path);
+            try {
+              var up = await backend().supabase.storage.from(job.bucket).upload(job.path, small, { cacheControl: '3600', upsert: true });
+              if (up.error) throw up.error;
+            } catch (uploadError) {
+              await backend().moveFile(job.bucket, BACKUP + '/' + job.path, job.path); // geri al
+              throw uploadError;
+            }
+            stats.done++;
+            stats.before += original.size;
+            stats.after += small.size;
+          } catch (error) {
+            stats.failed++;
+            failures.push(job.path + ': ' + (error.message || error));
+            console.warn('Optimize edilemedi:', job.bucket, job.path, error);
+          }
+        }
+        var mb = function (b) { return (b / 1024 / 1024).toFixed(1) + ' MB'; };
+        say('✅ Bitti: ' + stats.done + ' görsel küçültüldü (' + mb(stats.before) + ' → ' + mb(stats.after) + '), ' +
+          stats.skipped + ' görsel zaten uygundu' + (stats.failed ? ', ' + stats.failed + ' görselde hata oluştu.' : '.'));
+        if (failures.length) alert('Bazı görseller optimize edilemedi:\n\n' + failures.slice(0, 10).join('\n'));
+      } catch (error) {
+        console.error('Görsel optimizasyonu hatası:', error);
+        say('❌ İşlem yarıda kaldı: ' + (error.message || error));
+      } finally {
+        button.disabled = false;
+      }
     }
 
     // ---------------- Yükleme ----------------
