@@ -34,6 +34,7 @@
 
   var ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
   var MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+  var EDGE = window.OrionCommon.IMAGE_MAX_EDGE;
 
   function parseJsonLines(text) {
     return String(text || '')
@@ -370,6 +371,8 @@
       if (ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
         throw new Error('Geçersiz dosya tipi. Sadece JPG, PNG, WebP ve GIF desteklenir.');
       }
+      // Görseli kullanılacağı boyuta küçült (telefon fotoğrafları 5-12 MB geliyor)
+      file = await window.OrionCommon.compressImage(file, metadata.maxEdge || window.OrionCommon.maxEdgeForPath(path), file.name);
       if (file.size > MAX_IMAGE_BYTES) {
         throw new Error('Dosya boyutu çok büyük. Maksimum 12MB olmalıdır.');
       }
@@ -427,19 +430,19 @@
     }
 
     uploadLogo(fileOrDataUrl, type) {
-      return this.uploadImage(this.toFile(fileOrDataUrl, type + '-logo.png'), 'site-images', 'logos/' + type + '.png', { imageType: 'logo' });
+      return this.uploadImage(this.toFile(fileOrDataUrl, type + '-logo.png'), 'site-images', 'logos/' + type + '.png', { imageType: 'logo', maxEdge: EDGE.logo });
     }
 
     uploadCarouselImage(fileOrDataUrl, index) {
-      return this.uploadImage(this.toFile(fileOrDataUrl, 'carousel-' + index + '.png'), 'site-images', 'carousel/slide-' + index + '.png', { imageType: 'carousel' });
+      return this.uploadImage(this.toFile(fileOrDataUrl, 'carousel-' + index + '.png'), 'site-images', 'carousel/slide-' + index + '.png', { imageType: 'carousel', maxEdge: EDGE.carousel });
     }
 
     uploadAboutImage(fileOrDataUrl) {
-      return this.uploadImage(this.toFile(fileOrDataUrl, 'about.png'), 'site-images', 'about/main.png', { imageType: 'about' });
+      return this.uploadImage(this.toFile(fileOrDataUrl, 'about.png'), 'site-images', 'about/main.png', { imageType: 'about', maxEdge: EDGE.about });
     }
 
     uploadTransportImage(fileOrDataUrl, serviceType) {
-      return this.uploadImage(this.toFile(fileOrDataUrl, serviceType + '.png'), 'site-images', 'transport/' + serviceType + '.png', { imageType: 'transport' });
+      return this.uploadImage(this.toFile(fileOrDataUrl, serviceType + '.png'), 'site-images', 'transport/' + serviceType + '.png', { imageType: 'transport', maxEdge: EDGE.transport });
     }
 
     uploadTourImage(fileOrDataUrl, tourId, imageType) {
@@ -450,18 +453,46 @@
       }
       const safeImageType = this.normalizePathSegment(imageType) || 'main';
       const file = this.toFile(fileOrDataUrl, tourId + '-' + imageType + '.png');
-      return this.uploadImage(file, 'tour-images', 'tours/' + safeTourId + '/' + safeImageType + '.png', { imageType: 'tour' });
+      return this.uploadImage(file, 'tour-images', 'tours/' + safeTourId + '/' + safeImageType + '.png', {
+        imageType: 'tour', maxEdge: safeImageType === 'main' ? EDGE.tourMain : EDGE.tourDetail
+      });
     }
 
     uploadTransportOrgLogo(fileOrDataUrl, orgId) {
-      return this.uploadImage(this.toFile(fileOrDataUrl, 'org-' + orgId + '.png'), 'transport-images', 'orgs/' + orgId + '.png', { imageType: 'transport-org' });
+      return this.uploadImage(this.toFile(fileOrDataUrl, 'org-' + orgId + '.png'), 'transport-images', 'orgs/' + orgId + '.png', { imageType: 'transport-org', maxEdge: EDGE.orgLogo });
     }
 
-    /** Dosyayı verilen yola olduğu gibi yükler (popup ve yetkili kişi fotoğrafları). */
-    async uploadRawFile(bucket, path, file, upsert) {
+    /** Dosyayı verilen yola yükler (popup ve yetkili kişi fotoğrafları); maxEdge verilirse önce küçültür. */
+    async uploadRawFile(bucket, path, file, upsert, maxEdge) {
+      if (maxEdge) file = await window.OrionCommon.compressImage(file, maxEdge, file.name);
       const { error } = await this.supabase.storage.from(bucket).upload(path, file, upsert ? { upsert: true } : undefined);
       if (error) throw error;
       return this.getImageUrl(bucket, path);
+    }
+
+    /** Bucket içindeki tüm dosyaları alt klasörlerle birlikte listeler: [{path, size, mimetype}] */
+    async listAllFiles(bucket, prefix, skipPrefixes) {
+      const out = [];
+      const walk = async (folder) => {
+        for (let offset = 0; ; offset += 1000) {
+          const { data, error } = await this.supabase.storage.from(bucket).list(folder, { limit: 1000, offset: offset });
+          if (error) throw error;
+          for (const item of data || []) {
+            const full = folder ? folder + '/' + item.name : item.name;
+            if ((skipPrefixes || []).some(function (p) { return full === p || full.indexOf(p + '/') === 0; })) continue;
+            if (item.id === null) await walk(full);
+            else out.push({ path: full, size: (item.metadata && item.metadata.size) || 0, mimetype: (item.metadata && item.metadata.mimetype) || '' });
+          }
+          if (!data || data.length < 1000) break;
+        }
+      };
+      await walk(prefix || '');
+      return out;
+    }
+
+    async moveFile(bucket, from, to) {
+      const { error } = await this.supabase.storage.from(bucket).move(from, to);
+      if (error) throw error;
     }
   }
 

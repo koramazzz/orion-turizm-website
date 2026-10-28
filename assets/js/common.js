@@ -215,6 +215,66 @@
     return imageUrlLoads(saved).then(function (ok) { return ok ? saved : getTourStorageMapImageUrl(link); });
   }
 
+  // -----------------------------------------------------------------
+  // Görsel küçültme (yüklemeden önce tarayıcıda)
+  // -----------------------------------------------------------------
+  /** Kullanım yerine göre en uzun kenar (piksel). */
+  var IMAGE_MAX_EDGE = {
+    logo: 600, carousel: 1920, about: 1600, transport: 1600, tourMain: 1200,
+    tourDetail: 2000, orgLogo: 400, contact: 400, popup: 1200
+  };
+
+  /** Storage yolundan kullanım yerini çıkarır (eski görselleri optimize ederken). */
+  function maxEdgeForPath(path) {
+    var p = String(path || '');
+    if (/^logos\//.test(p)) return IMAGE_MAX_EDGE.logo;
+    if (/^carousel\//.test(p)) return IMAGE_MAX_EDGE.carousel;
+    if (/^about\//.test(p)) return IMAGE_MAX_EDGE.about;
+    if (/^transport\//.test(p)) return IMAGE_MAX_EDGE.transport;
+    if (/^tours\/[^/]+\/main\.png$/i.test(p)) return IMAGE_MAX_EDGE.tourMain;
+    if (/^tours\//.test(p)) return IMAGE_MAX_EDGE.tourDetail;
+    if (/^orgs\//.test(p)) return IMAGE_MAX_EDGE.orgLogo;
+    if (/^contacts\//.test(p)) return IMAGE_MAX_EDGE.contact;
+    if (/^popups\//.test(p)) return IMAGE_MAX_EDGE.popup;
+    return IMAGE_MAX_EDGE.tourDetail;
+  }
+
+  function canvasToBlob(canvas, type, quality) {
+    return new Promise(function (resolve) { canvas.toBlob(resolve, type, quality); });
+  }
+
+  /**
+   * Görseli en uzun kenarı maxEdge olacak şekilde küçültüp WebP'ye çevirir
+   * (tarayıcı WebP üretemiyorsa JPEG, şeffaf görsellerde PNG).
+   * Küçültme bir kazanç sağlamıyorsa veya görsel GIF/okunamazsa orijinali döner.
+   */
+  async function compressImage(blob, maxEdge, name) {
+    var type = (blob && blob.type) || '';
+    if (!/^image\/(png|jpe?g|webp)$/i.test(type) || typeof createImageBitmap !== 'function') return blob;
+    var bitmap;
+    try { bitmap = await createImageBitmap(blob); } catch (e) { return blob; }
+    var scale = Math.min(1, (maxEdge || 2000) / Math.max(bitmap.width, bitmap.height));
+    var width = Math.max(1, Math.round(bitmap.width * scale));
+    var height = Math.max(1, Math.round(bitmap.height * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    if (bitmap.close) bitmap.close();
+
+    var out = await canvasToBlob(canvas, 'image/webp', 0.82);
+    if (!out || out.type !== 'image/webp') {
+      // Safari gibi WebP üretemeyen tarayıcılar
+      var hasAlpha = /png/i.test(type) && ctx.getImageData(0, 0, Math.min(width, 64), Math.min(height, 64)).data
+        .some(function (v, i) { return i % 4 === 3 && v < 255; });
+      out = hasAlpha ? await canvasToBlob(canvas, 'image/png') : await canvasToBlob(canvas, 'image/jpeg', 0.85);
+    }
+    if (!out || (scale === 1 && out.size >= blob.size)) return blob;
+    return new File([out], name || (blob.name || 'image'), { type: out.type });
+  }
+
   window.OrionCommon = {
     escapeHtml: escapeHtml,
     normalizeTourId: normalizeTourId,
@@ -231,7 +291,10 @@
     mergeTourImageUrls: mergeTourImageUrls,
     getTourStorageImageUrls: getTourStorageImageUrls,
     getTourStorageMapImageUrl: getTourStorageMapImageUrl,
-    resolveTourMapImageUrl: resolveTourMapImageUrl
+    resolveTourMapImageUrl: resolveTourMapImageUrl,
+    IMAGE_MAX_EDGE: IMAGE_MAX_EDGE,
+    maxEdgeForPath: maxEdgeForPath,
+    compressImage: compressImage
   };
 
   // Geriye dönük uyumluluk (eski satır içi kodlar bu adları kullanıyordu)
