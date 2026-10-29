@@ -470,30 +470,6 @@
       return this.getImageUrl(bucket, path);
     }
 
-    /** Bucket içindeki tüm dosyaları alt klasörlerle birlikte listeler: [{path, size, mimetype}] */
-    async listAllFiles(bucket, prefix, skipPrefixes) {
-      const out = [];
-      const walk = async (folder) => {
-        for (let offset = 0; ; offset += 1000) {
-          const { data, error } = await this.supabase.storage.from(bucket).list(folder, { limit: 1000, offset: offset });
-          if (error) throw error;
-          for (const item of data || []) {
-            const full = folder ? folder + '/' + item.name : item.name;
-            if ((skipPrefixes || []).some(function (p) { return full === p || full.indexOf(p + '/') === 0; })) continue;
-            if (item.id === null) await walk(full);
-            else out.push({ path: full, size: (item.metadata && item.metadata.size) || 0, mimetype: (item.metadata && item.metadata.mimetype) || '' });
-          }
-          if (!data || data.length < 1000) break;
-        }
-      };
-      await walk(prefix || '');
-      return out;
-    }
-
-    async moveFile(bucket, from, to) {
-      const { error } = await this.supabase.storage.from(bucket).move(from, to);
-      if (error) throw error;
-    }
   }
 
   window.supabase = client;
