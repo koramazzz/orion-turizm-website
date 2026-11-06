@@ -248,18 +248,22 @@
     async saveFormFields(fieldsArray) {
       const fields = Array.isArray(fieldsArray) ? fieldsArray : [];
       const existingFields = await this.getFormFields(true);
-
-      const toDelete = existingFields.filter(function (existing) {
-        return !fields.some(function (field) { return field.label === existing.label; });
+      const claimed = new Set();
+      const plan = fields.map(function (field) {
+        const match = existingFields.find(function (e) { return !claimed.has(e.id) && e.label === field.label; }) || null;
+        if (match) claimed.add(match.id);
+        return { field: field, match: match };
       });
-      for (const field of toDelete) {
+      // Eşleşmeyenler (silinen alanlar ve eski kayıtlardan kalan aynı adlı kopyalar) silinir
+      for (const field of existingFields.filter(function (e) { return !claimed.has(e.id); })) {
         const { error } = await this.supabase.from('form_fields').delete().eq('id', field.id);
         if (error) throw error;
       }
 
       const results = [];
-      for (const field of fields) {
-        const existing = existingFields.find(function (e) { return e.label === field.label; });
+      for (const item of plan) {
+        const field = item.field;
+        const existing = item.match;
         const row = {
           label: field.label,
           placeholder: field.placeholder,
@@ -475,6 +479,32 @@
 
     uploadTransportOrgLogo(fileOrDataUrl, orgId) {
       return this.uploadImage(this.toFile(fileOrDataUrl, 'org-' + orgId + '.png'), 'transport-images', 'orgs/' + orgId + '.png', { imageType: 'transport-org', maxEdge: EDGE.orgLogo });
+    }
+
+    /**
+     * Tur linki değişince görsel klasörünü taşır: tours/<eski>/* -> tours/<yeni>/*
+     * Kaynak boşsa bir şey yapmaz; hedefte dosya varsa (başka tura ait olabilir) hata verir.
+     * Dönüş: taşınan dosya sayısı.
+     */
+    async moveTourFolder(oldTourId, newTourId) {
+      if (!oldTourId || !newTourId || oldTourId === newTourId) return 0;
+      const bucket = this.supabase.storage.from('tour-images');
+      const list = async (id) => {
+        const { data, error } = await bucket.list('tours/' + id, { limit: 1000 });
+        if (error) throw error;
+        return (data || []).filter(function (f) { return f.id !== null; }).map(function (f) { return f.name; });
+      };
+      const sources = await list(oldTourId);
+      if (!sources.length) return 0;
+      const targets = await list(newTourId);
+      if (targets.length) {
+        throw new Error('"' + newTourId + '" klasöründe zaten görseller var; tur linki başka bir turla çakışıyor olabilir. Eski görseller "' + oldTourId + '" klasöründe duruyor.');
+      }
+      for (const name of sources) {
+        const { error } = await bucket.move('tours/' + oldTourId + '/' + name, 'tours/' + newTourId + '/' + name);
+        if (error) throw error;
+      }
+      return sources.length;
     }
 
     /** Dosyayı verilen yola yükler (popup ve yetkili kişi fotoğrafları); maxEdge verilirse önce küçültür. */

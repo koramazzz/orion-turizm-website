@@ -115,7 +115,7 @@
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      document.querySelectorAll('.modal[aria-hidden="false"]').forEach(closeModal);
+      ['routesModal', 'studentModal', 'factoryModal'].forEach(function (id) { closeModal(document.getElementById(id)); });
     });
     [['navRoutes', 'routesModal'], ['navStudent', 'studentModal'], ['navFactory', 'factoryModal']].forEach(function (pair) {
       var trigger = document.getElementById(pair[0]);
@@ -949,9 +949,24 @@
   // -----------------------------------------------------------------
   // Başlat
   // -----------------------------------------------------------------
+  function renderFormsOrFail(content) {
+    loadFormFields(content || {}).then(function (fields) {
+      if (fields && fields.length) { renderDynamicForms(fields); return; }
+      // Alanlar alınamadı: boş form gönderilmesin
+      [['#toursForm', '#toursFormStatus'], ['#customRouteForm', '#customRouteStatus']].forEach(function (cfg) {
+        var form = document.querySelector(cfg[0]);
+        var status = document.querySelector(cfg[1]);
+        if (!form || form.querySelector('.form-grid input, .form-grid select, .form-grid textarea')) return;
+        var button = form.querySelector('[type="submit"]');
+        if (button) button.disabled = true;
+        if (status) status.textContent = 'Form şu anda yüklenemiyor. Lütfen sayfayı yenileyin ya da bizi telefonla arayın.';
+      });
+    });
+  }
+
   async function renderContent() {
     var content = await data.siteContent();
-    if (!content) { setFade(FADE_SECTIONS, true); return null; }
+    if (!content) { setFade(FADE_SECTIONS, true); renderFormsOrFail(null); return null; }
 
     if (content.siteTitle && isPage('index.html')) document.title = content.siteTitle;
     updateCards(content);
@@ -965,7 +980,7 @@
     renderOrgLists(content);
     renderToursGrid(content);
     loadCarousel(content);
-    loadFormFields(content).then(function (fields) { if (fields && fields.length) renderDynamicForms(fields); });
+    renderFormsOrFail(content);
     setTimeout(function () { setFade(FADE_SECTIONS, true); }, 50);
     return content;
   }
