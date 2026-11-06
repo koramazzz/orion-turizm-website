@@ -205,8 +205,31 @@
   // =================================================================
   window.toggleOrgCard = function (card) { card.classList.toggle('open'); };
 
+  /** Kart silinince açıklaması da gitsin (yeniden adlandırılan başka bir kurum onu devralmasın). */
+  window.removeTransportOrg = function (button) {
+    var card = button.closest('.org-card');
+    if (!card) return;
+    var name = ((card.querySelector('.org-name') || {}).value || '').trim();
+    if (name) delete window.orgDescriptionsStore[name];
+    card.remove();
+    window.refreshOrgDescDropdown();
+  };
+
   window.syncOrgCardHeader = function (card) {
-    var name = (card.querySelector('.org-name') || {}).value || 'Yeni Kurum';
+    var input = card.querySelector('.org-name');
+    var name = (input && input.value) || 'Yeni Kurum';
+    // Ad değişince açıklama yeni adın altına taşınır (kart kimliğini korur)
+    if (input) {
+      var prev = (input.dataset.currentName || '').trim();
+      var cur = (input.value || '').trim();
+      if (prev !== cur) {
+        if (prev && Object.prototype.hasOwnProperty.call(window.orgDescriptionsStore, prev)) {
+          window.orgDescriptionsStore[cur] = window.orgDescriptionsStore[prev];
+          delete window.orgDescriptionsStore[prev];
+        }
+        input.dataset.currentName = cur;
+      }
+    }
     var count = card.querySelectorAll('.org-btn-row').length;
     var nameDisplay = card.querySelector('.org-name-display');
     var badge = card.querySelector('.org-btn-badge');
@@ -304,7 +327,7 @@
       preview.style.display = 'block';
       if (mini) { mini.src = dataUrl; mini.style.display = 'block'; }
       try {
-        var url = await backend().uploadTransportOrgLogo(dataUrl, orgSlug(item.querySelector('.org-name').value || 'temp'));
+        var url = await backend().uploadTransportOrgLogo(dataUrl, (orgSlug(item.querySelector('.org-name').value) || 'kurum') + '-' + Date.now());
         preview.src = withCacheBuster(url);
         preview.dataset.url = url;
         if (mini) { mini.src = withCacheBuster(url); mini.style.display = 'block'; }
@@ -337,7 +360,7 @@
           '<option value="school">🏫 Okul</option>' +
           '<option value="factory">🏭 Fabrika</option>' +
         '</select>' +
-        '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); this.closest(\'.org-card\').remove()" title="Kurumu Sil" style="margin-left:4px;flex-shrink:0;">🗑️</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); removeTransportOrg(this)" title="Kurumu Sil" style="margin-left:4px;flex-shrink:0;">🗑️</button>' +
       '</div>' +
       '<div class="org-card-body">' +
         '<div class="org-card-fields"><div>' +
@@ -375,6 +398,7 @@
     if (!data) return;
 
     item.querySelector('.org-name').value = data.name || '';
+    item.querySelector('.org-name').dataset.currentName = (data.name || '').trim();
     item.querySelector('.org-type').value = data.type || 'school';
     if (data.name && data.text) window.orgDescriptionsStore[data.name] = data.text;
     if (data.logo) {
@@ -427,13 +451,8 @@
       var logoPreview = item.querySelector('.org-logo-preview');
       var logo = cleanStoredImageUrl((logoPreview && (logoPreview.dataset.url || logoPreview.src)) || '');
 
-      // Kurum adı değiştiyse açıklamayı yeni ada taşı
       var store = window.orgDescriptionsStore;
       var text = (store[name] || '').trim();
-      if (!text && originalName && originalName !== name) {
-        text = (store[originalName] || item.dataset.orgDescription || '').trim();
-        if (text) store[name] = text;
-      }
 
       var contacts = [];
       item.querySelectorAll('.org-contact-card').forEach(function (card) {
@@ -554,6 +573,8 @@
         link: tour.link,
         image: backend().getImageUrl('tour-images', 'tours/' + normalizeTourId(tour.link || tour.id) + '/main.png') + '?v=' + Date.now()
       });
+      item.dataset.originalLink = tour.link || '';
+      item.querySelector('.tour-link').dataset.prevLink = tour.link || '';
       container.appendChild(item);
       setupTourImageUpload(item);
     });
@@ -610,9 +631,12 @@
     label.textContent = title || selectedText || 'Yeni Tur Detayı';
   }
 
-  function refreshTourDetailLinkDropdowns() {
+  /** renamed: {eskiLink: yeniLink} — o linke bağlı tur detayları yeni linki seçer. */
+  function refreshTourDetailLinkDropdowns(renamed) {
     document.querySelectorAll('#tourDetailsList .tour-detail-link').forEach(function (select) {
-      select.innerHTML = tourDetailLinkOptions((select.value || '').trim());
+      var value = (select.value || '').trim();
+      if (renamed && Object.prototype.hasOwnProperty.call(renamed, value)) value = renamed[value];
+      select.innerHTML = tourDetailLinkOptions(value);
     });
     document.querySelectorAll('#tourDetailsList .tour-details-item').forEach(updateTourDetailHeader);
   }
@@ -688,14 +712,23 @@
     if (imgSrc && imgSrc.indexOf('data:') !== 0 && imgSrc.indexOf('blob:') !== 0) img.dataset.publicUrl = imgSrc;
   }
 
+  window.pendingImageLoads = [];
+  function trackLoad(promise) {
+    window.pendingImageLoads.push(promise.catch(function () {}));
+    return promise;
+  }
+
   async function loadTourDetailImages(item, link, savedImages) {
     var container = item.querySelector('.tour-detail-images');
     if (!container) return;
     var storageUrls = link ? await C.getTourStorageImageUrls(link) : [];
     var urls = C.mergeTourImageUrls(Array.isArray(savedImages) ? savedImages : [], storageUrls);
     container.innerHTML = '';
-    if (!urls.length) createTourDetailImageSlot(container, 1);
-    else urls.forEach(function (url, i) { createTourDetailImageSlot(container, i + 1, withCacheBuster(url)); });
+    if (!urls.length) { createTourDetailImageSlot(container, 1); return; }
+    // Kutu numarası dosya adından gelir (image3.png -> 3); aradan silinen görseller numaraları kaydırmaz
+    var used = urls.map(function (url) { var m = String(url).split('?')[0].match(/\/image(\d+)\.png$/i); return m ? parseInt(m[1], 10) : 0; });
+    var next = Math.max.apply(null, used.concat([0]));
+    urls.forEach(function (url, i) { createTourDetailImageSlot(container, used[i] || ++next, withCacheBuster(url)); });
   }
 
   function showMapPreview(preview, url) {
@@ -737,9 +770,9 @@
 
     mapUpload.addEventListener('change', function (e) { uploadTourDetailImage(e, mapPreview, 'mapImage'); });
     if (detail && detail.mapImage) {
-      C.resolveTourMapImageUrl(activeLink, detail.mapImage).then(function (url) { showMapPreview(mapPreview, url); });
-    } else {
-      previewMapFromStorage(activeLink);
+      trackLoad(C.resolveTourMapImageUrl(activeLink, detail.mapImage).then(function (url) { showMapPreview(mapPreview, url); }));
+    } else if (activeLink) {
+      trackLoad(C.getTourStorageMapImageUrl(activeLink).then(function (url) { showMapPreview(mapPreview, url); }));
     }
 
     var images = item.querySelector('.tour-detail-images');
@@ -758,7 +791,7 @@
       if (info) backend().deleteImage(info.bucket, info.path);
       slot.remove();
     });
-    if (activeLink) loadTourDetailImages(item, activeLink, detail && detail.images);
+    if (activeLink) trackLoad(loadTourDetailImages(item, activeLink, detail && detail.images));
 
     linkSelect.addEventListener('change', function () {
       var link = linkSelect.value.trim();
@@ -885,7 +918,7 @@
       var label = item.querySelector('.field-label').value.trim();
       var placeholder = item.querySelector('.field-placeholder').value.trim();
       var type = item.querySelector('.field-type').value;
-      if (!label || !placeholder) return;
+      if (!label) return;
       fields.push({
         label: label,
         placeholder: placeholder,
@@ -964,7 +997,8 @@
 
   async function loadPopupSettings() {
     var result = await window.supabase.from('popup_settings').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle();
-    if (result.error) { console.error('Popup ayarları yüklenirken hata:', result.error); return; }
+    if (result.error) { console.error('Popup ayarları yüklenirken hata:', result.error); window.popupSettingsLoaded = false; return; }
+    window.popupSettingsLoaded = true;
     var row = result.data;
     if (row) {
       $('popupActive').checked = row.is_active;
@@ -999,6 +1033,11 @@
   window.savePopupSettings = async function (options) {
     var silent = options && options.silent === true;
     var throwOnError = options && options.throwOnError === true;
+    if (window.popupSettingsLoaded === false) {
+      // Yüklenemeyen ayarların üzerine boş form yazılmasın
+      if (!silent) alert('Popup ayarları yüklenemediği için kaydedilemiyor. Lütfen sayfayı yenileyin.');
+      return false;
+    }
     var fail = function (message, error) {
       console.error(message, error || '');
       if (!silent) alert(message);
@@ -1101,7 +1140,16 @@
       });
 
       var toursList = $('toursList');
-      var refresh = function (e) { if (e.target.classList.contains('tour-link')) refreshTourDetailLinkDropdowns(); };
+      var refresh = function (e) {
+        if (!e.target.classList.contains('tour-link')) return;
+        var input = e.target;
+        var prev = (input.dataset.prevLink || '').trim();
+        var cur = (input.value || '').trim();
+        var renamed = {};
+        if (prev && prev !== cur) renamed[prev] = cur;
+        input.dataset.prevLink = cur;
+        refreshTourDetailLinkDropdowns(renamed);
+      };
       toursList.addEventListener('input', refresh);
       toursList.addEventListener('change', refresh);
       toursList.querySelectorAll('.list-item').forEach(setupTourImageUpload);
@@ -1301,7 +1349,15 @@
       container.innerHTML = '';
       var self = this;
       if (!urls.length) container.appendChild(this.createCarouselImageItem(0));
-      else urls.forEach(function (url, i) { container.appendChild(self.createCarouselImageItem(i, url + '?v=' + Date.now())); });
+      else {
+        // Kutu numarası dosya adından (slide-3.png -> 3): aradan silinen slayt numaraları kaydırmasın
+        var used = urls.map(function (url) { var m = String(url).split('?')[0].match(/\/slide-(\d+)\./i); return m ? parseInt(m[1], 10) : -1; });
+        var next = Math.max.apply(null, used.concat([-1]));
+        urls.forEach(function (url, i) {
+          var index = used[i] >= 0 ? used[i] : ++next;
+          container.appendChild(self.createCarouselImageItem(index, url + '?v=' + Date.now()));
+        });
+      }
 
       await setIfExists('aboutImage', 'site-images', 'about/main.png');
       await setIfExists('studentServiceImage', 'site-images', 'transport/studentService.png');
@@ -1310,9 +1366,11 @@
 
     // ---------------- Yükleme ----------------
     async loadSavedContent() {
+      this.loaded = false;
+      this.loadError = null;
       try {
-        var content = await backend().getSiteContent();
-        if (!content) { console.warn('Site içerikleri yüklenemedi.'); return; }
+        // strict: okunamayan veri "boş" sayılmasın; yoksa Kaydet onu siler
+        var content = (await backend().getSiteContent(true)) || {};
         this.content = content;
 
         Object.keys(content).forEach(function (key) {
@@ -1320,9 +1378,9 @@
           if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && typeof content[key] === 'string') el.value = content[key];
         });
 
-        var orgs = await backend().getTransportOrgs();
+        var orgs = await backend().getTransportOrgs(true);
         if (orgs.length) loadTransportOrgs(orgs);
-        var fields = await backend().getFormFields();
+        var fields = await backend().getFormFields(true);
         if (fields.length) loadFormFields(fields);
         var descriptions = await backend().getOrgDescriptions();
         Object.keys(descriptions).forEach(function (name) { addOrgDescriptionOption(name, descriptions[name]); });
@@ -1340,23 +1398,66 @@
           addDefaultTransportServicesIfEmpty();
         }
 
-        var tours = await backend().getTours();
+        var tours = await backend().getTours(true);
         if (tours.length) loadTours(tours);
         var details = String(content.tourDetails || '').split('\n').filter(function (l) { return l.trim(); })
           .map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
         if (details.length) loadTourDetails(details);
 
-        await this.loadImagesFromStorage();
+        // Görsel önizlemeleri (karusel listesi, tur görselleri) de yüklensin; sonra kaydetmeye izin ver
+        this.imagesLoaded = false;
+        try {
+          await this.loadImagesFromStorage();
+          await Promise.all(window.pendingImageLoads);
+          this.imagesLoaded = true;
+        } catch (imageError) {
+          console.warn('Görsel önizlemeleri yüklenemedi; karusel listesi kayıtlı haliyle korunacak:', imageError);
+        }
+        this.loaded = true;
       } catch (error) {
         console.error('Admin verileri yüklenemedi:', error);
+        this.loadError = error;
+        this.showLoadError();
       } finally {
         revealPage();
       }
     }
 
+    showLoadError() {
+      var box = $('successMessage');
+      if (!box) return;
+      box.style.cssText += 'display:block;background:#fdecea;color:#8a1c1c;border:1px solid #f5c2c0;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-weight:600;';
+      box.textContent = '⚠️ Panel verileri yüklenemedi. Veri kaybını önlemek için kaydetme kapatıldı; lütfen sayfayı yenileyin.';
+      clearTimeout(this.successTimer);
+    }
+
     // ---------------- Kaydetme ----------------
-    async saveChanges() {
+    /** Kaydetmeleri sıraya koyar: çift tıklama ya da görsel yüklemenin otomatik kaydı aynı anda çalışmaz. */
+    saveChanges() {
+      var self = this;
+      var run = (this.saveChain || Promise.resolve()).then(function () { return self.performSave(); });
+      this.saveChain = run.catch(function () {});
+      return run;
+    }
+
+    async performSave() {
+      if (!this.loaded) {
+        alert(this.loadError
+          ? '⚠️ Panel verileri yüklenemediği için kaydetme kapalı (mevcut verilerin silinmemesi için).\n\nLütfen sayfayı yenileyip tekrar deneyin.'
+          : 'Veriler henüz yükleniyor. Lütfen birkaç saniye sonra tekrar deneyin.');
+        return;
+      }
+      var saveButton = $('saveChanges');
+      var saveLabel = saveButton ? saveButton.textContent : '';
+      if (saveButton) { saveButton.disabled = true; saveButton.textContent = '⏳ Kaydediliyor...'; }
       try {
+        var problems = this.findIncompleteRows();
+        if (problems.length) {
+          alert('Kaydedilmedi. Eksik bilgi var:\n\n• ' + problems.join('\n• ') + '\n\nSatırı tamamlayın ya da 🗑️ ile tamamen silin.');
+          return;
+        }
+        await Promise.all(window.pendingImageLoads);
+        await this.moveRenamedTourFolders();
         window.syncOrgDescriptions({ silent: true });
         var field = function (id) { var el = $(id); return el ? el.value || '' : ''; };
         var content = {
@@ -1380,7 +1481,7 @@
           toursList: getToursData(),
           tourDetails: getTourDetailsData(),
           formFields: getFormFieldsData(),
-          carouselImages: JSON.stringify(this.getCarouselImagesData())
+          carouselImages: this.imagesLoaded ? JSON.stringify(this.getCarouselImagesData()) : (this.content.carouselImages || '[]')
         };
 
         var saveError = null;
@@ -1401,10 +1502,62 @@
           saveError = saveError || popupError;
         }
         if (saveError) throw saveError;
+        document.querySelectorAll('#toursList .list-item').forEach(function (item) {
+          item.dataset.originalLink = item.querySelector('.tour-link').value.trim();
+        });
         this.showSuccessMessage();
       } catch (error) {
         console.error('Kaydetme hatası:', error);
         alert('Kaydetme sırasında bir hata oluştu: ' + error.message);
+      } finally {
+        if (saveButton) { saveButton.disabled = false; saveButton.textContent = saveLabel; }
+      }
+    }
+
+    /** Yarım doldurulmuş satırlar sessizce silinmesin: kullanıcıya listelenir, kayıt durur. */
+    findIncompleteRows() {
+      var problems = [];
+      document.querySelectorAll('#toursList .list-item').forEach(function (item, i) {
+        var v = function (cls) { var el = item.querySelector(cls); return el ? el.value.trim() : ''; };
+        var name = v('.tour-name'), desc = v('.tour-description'), link = v('.tour-link');
+        if ((name || desc || link) && !(name && desc && link)) {
+          problems.push('Hazır Turlar ' + (i + 1) + '. satır ("' + (name || link || desc) + '"): ad, açıklama ve link üçü de gerekli');
+        }
+      });
+      document.querySelectorAll('#formFieldsList .list-item').forEach(function (item, i) {
+        var label = item.querySelector('.field-label').value.trim();
+        var placeholder = item.querySelector('.field-placeholder').value.trim();
+        var options = item.querySelector('.field-options').value.trim();
+        if (!label && (placeholder || options)) problems.push('Form alanı ' + (i + 1) + '. satır: alan adı boş');
+      });
+      document.querySelectorAll('#transportOrgsList > .list-item').forEach(function (card, i) {
+        var name = ((card.querySelector('.org-name') || {}).value || '').trim();
+        var hasContent = card.querySelectorAll('.org-btn-row, .org-contact-card').length > 0 ||
+          Boolean((card.querySelector('.org-logo-preview') || {}).dataset && card.querySelector('.org-logo-preview').dataset.url);
+        if (!name && hasContent) problems.push('Taşımacılık kurumu ' + (i + 1) + '. kart: kurum adı boş');
+      });
+      return problems;
+    }
+
+    /** Linki değişen turların görsel klasörünü taşır ve paneldeki görsel adreslerini günceller. */
+    async moveRenamedTourFolders() {
+      var rows = Array.prototype.filter.call(document.querySelectorAll('#toursList .list-item'), function (item) {
+        var oldId = normalizeTourId(item.dataset.originalLink || '');
+        var newId = normalizeTourId(item.querySelector('.tour-link').value);
+        return oldId && newId && oldId !== newId;
+      });
+      for (const item of rows) {
+        var oldId = normalizeTourId(item.dataset.originalLink);
+        var newId = normalizeTourId(item.querySelector('.tour-link').value);
+        var moved = await backend().moveTourFolder(oldId, newId);
+        if (!moved) continue;
+        var from = '/tours/' + oldId + '/';
+        var to = '/tours/' + newId + '/';
+        document.querySelectorAll('#tourDetailsList img, #toursList img').forEach(function (img) {
+          if (img.dataset.publicUrl && img.dataset.publicUrl.indexOf(from) !== -1) img.dataset.publicUrl = img.dataset.publicUrl.split(from).join(to);
+          var src = img.getAttribute('src') || '';
+          if (src.indexOf(from) !== -1) img.src = src.split(from).join(to);
+        });
       }
     }
 
@@ -1423,7 +1576,12 @@
       if (new Set(names).size !== names.length) throw new Error('Taşımacılık kurumlarında aynı isim birden fazla kez kullanılamaz');
       await backend().saveTransportOrgs(orgs);
 
-      var saved = await backend().getTransportOrgs();
+      var saved = await backend().getTransportOrgs(true);
+      document.querySelectorAll('#transportOrgsList > .list-item').forEach(function (card) {
+        var name = ((card.querySelector('.org-name') || {}).value || '').trim();
+        var row = saved.find(function (o) { return String(o.name || '').trim() === name; });
+        if (row) { card.dataset.orgId = String(row.id); card.dataset.originalName = name; }
+      });
       var expected = orgs.map(function (o) { return Object.assign(normalizeOrg(o), { id: o.id }); });
       var actual = saved.map(function (o) { return Object.assign(normalizeOrg(o), { id: String(o.id || '') }); });
       if (expected.length !== actual.length) {
@@ -1451,7 +1609,7 @@
           order_index: Number(f.order_index != null ? f.order_index : i) || 0
         };
       };
-      var saved = await backend().getFormFields();
+      var saved = await backend().getFormFields(true);
       if (JSON.stringify(fields.map(norm)) !== JSON.stringify(saved.map(norm))) {
         throw new Error('Form alanları kaydedildi ama backend doğrulaması eşleşmedi');
       }
