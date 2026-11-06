@@ -99,7 +99,8 @@
     // ---------------------------------------------------------------
     // site_content (anahtar/değer)
     // ---------------------------------------------------------------
-    async getSiteContent() {
+    /** strict=true: okuma hatasında boş değer yerine hata fırlatır (admin paneli veri kaybını önlemek için kullanır). */
+    async getSiteContent(strict) {
       try {
         const { data, error } = await this.supabase.from('site_content').select('*');
         if (error) throw error;
@@ -109,6 +110,7 @@
         return content;
       } catch (error) {
         console.error('Site içerikleri alınamadı:', error);
+        if (strict) throw error;
         return null;
       }
     }
@@ -142,13 +144,14 @@
     // ---------------------------------------------------------------
     // transport_orgs
     // ---------------------------------------------------------------
-    async getTransportOrgs() {
+    async getTransportOrgs(strict) {
       try {
         const { data, error } = await this.supabase.from('transport_orgs').select('*').order('created_at', { ascending: true });
         if (error) throw error;
         return data || [];
       } catch (error) {
         console.error('Kurumlar alınamadı:', error);
+        if (strict) throw error;
         return [];
       }
     }
@@ -163,26 +166,34 @@
         ? orgsArray.filter(function (org) { return org && String(org.name || '').trim(); })
         : [];
 
-      const existingOrgs = await this.getTransportOrgs();
-      const nextIds = new Set(nextOrgs.map(function (org) { return String(org.id || '').trim(); }).filter(Boolean));
-      const nextNames = new Set(nextOrgs.map(function (org) { return String(org.name || '').trim(); }));
-
-      const toDelete = existingOrgs.filter(function (org) {
+      // Okuma başarısız olursa boş liste ile devam ETME: her şeyi yeniden eklerdi.
+      const existingOrgs = await this.getTransportOrgs(true);
+      const claimed = new Set();
+      // 1) Kimliği olan kartlar kendi kaydıyla eşleşir.
+      const plan = nextOrgs.map(function (org) {
         const id = String(org.id || '').trim();
-        const name = String(org.name || '').trim();
-        return !(id && nextIds.has(id)) && !nextNames.has(name);
+        const match = id ? existingOrgs.find(function (e) { return String(e.id) === id; }) : null;
+        if (match) claimed.add(String(match.id));
+        return { org: org, match: match || null };
       });
-      for (const org of toDelete) {
+      // 2) Kimliği olmayan (yeni ya da eski formatlı) kartlar, sahipsiz kalan aynı adlı kayıtla eşleşir.
+      plan.forEach(function (item) {
+        if (item.match) return;
+        const name = String(item.org.name || '').trim();
+        const match = existingOrgs.find(function (e) { return !claimed.has(String(e.id)) && String(e.name || '').trim() === name; });
+        if (match) { item.match = match; claimed.add(String(match.id)); }
+      });
+      // 3) Eşleşmeyen kayıtlar silinir (yeniden adlandırma çakışmasın diye güncellemeden önce).
+      for (const org of existingOrgs.filter(function (e) { return !claimed.has(String(e.id)); })) {
         const { error } = await this.supabase.from('transport_orgs').delete().eq('id', org.id);
         if (error) throw error;
       }
 
       const results = [];
-      for (const org of nextOrgs) {
-        const orgId = String(org.id || '').trim();
+      for (const item of plan) {
+        const org = item.org;
         const orgName = String(org.name || '').trim();
-        const existing = existingOrgs.find(function (e) { return String(e.id || '') === orgId; })
-          || existingOrgs.find(function (e) { return e.name === orgName; });
+        const existing = item.match;
 
         const row = {
           name: orgName,
@@ -221,13 +232,14 @@
     // ---------------------------------------------------------------
     // form_fields
     // ---------------------------------------------------------------
-    async getFormFields() {
+    async getFormFields(strict) {
       try {
         const { data, error } = await this.supabase.from('form_fields').select('*').order('order_index', { ascending: true });
         if (error) throw error;
         return data || [];
       } catch (error) {
         console.error('Form alanları alınamadı:', error);
+        if (strict) throw error;
         return [];
       }
     }
@@ -235,7 +247,7 @@
     /** Form alanlarını etikete göre eşitler (sil / güncelle / ekle). */
     async saveFormFields(fieldsArray) {
       const fields = Array.isArray(fieldsArray) ? fieldsArray : [];
-      const existingFields = await this.getFormFields();
+      const existingFields = await this.getFormFields(true);
 
       const toDelete = existingFields.filter(function (existing) {
         return !fields.some(function (field) { return field.label === existing.label; });
@@ -270,13 +282,14 @@
     // ---------------------------------------------------------------
     // tours
     // ---------------------------------------------------------------
-    async getTours() {
+    async getTours(strict) {
       try {
         const { data, error } = await this.supabase.from('tours').select('*').order('created_at', { ascending: true });
         if (error) throw error;
         return data || [];
       } catch (error) {
         console.error('Turlar alınamadı:', error);
+        if (strict) throw error;
         return [];
       }
     }
@@ -284,7 +297,8 @@
     /** "ad|açıklama|görsel|link" satırlarını tours tablosuyla eşitler (link'e göre). */
     async saveTours(toursListString) {
       if (!toursListString || toursListString.trim() === '') {
-        const { error } = await this.supabase.from('tours').delete().neq('id', 0);
+        // id UUID olduğu için neq('id', 0) Postgres hatası veriyordu
+        const { error } = await this.supabase.from('tours').delete().not('id', 'is', null);
         if (error) throw error;
         return [];
       }
@@ -293,7 +307,7 @@
         return { name: t.name || '', description: t.description || '', image_url: t.image || null, link: t.link || '' };
       });
 
-      const existingTours = await this.getTours();
+      const existingTours = await this.getTours(true);
       const nextLinks = tours.map(function (t) { return t.link; });
       for (const tour of existingTours.filter(function (t) { return nextLinks.indexOf(t.link) === -1; })) {
         const { error } = await this.supabase.from('tours').delete().eq('id', tour.id);
@@ -314,15 +328,16 @@
     // ---------------------------------------------------------------
     async saveFormSubmission(formType, formData) {
       try {
-        const { data, error } = await this.supabase
+        // .select() EKLEMEYİN: kaydı geri okumak SELECT izni ister, ziyaretçide bu izin yok
+        // (RLS) ve ekleme tümüyle reddedilir.
+        const { error } = await this.supabase
           .from('form_submissions')
-          .insert({ form_type: formType, data_json: formData, ip_address: null, user_agent: navigator.userAgent })
-          .select();
+          .insert({ form_type: formType, data_json: formData, ip_address: null, user_agent: navigator.userAgent });
         if (error) throw error;
-        return data && data[0];
+        return true;
       } catch (error) {
         console.error('Form gönderisi kaydedilemedi:', error);
-        return null;
+        return false;
       }
     }
 

@@ -304,7 +304,7 @@
       preview.style.display = 'block';
       if (mini) { mini.src = dataUrl; mini.style.display = 'block'; }
       try {
-        var url = await backend().uploadTransportOrgLogo(dataUrl, orgSlug(item.querySelector('.org-name').value || 'temp'));
+        var url = await backend().uploadTransportOrgLogo(dataUrl, (orgSlug(item.querySelector('.org-name').value) || 'kurum') + '-' + Date.now());
         preview.src = withCacheBuster(url);
         preview.dataset.url = url;
         if (mini) { mini.src = withCacheBuster(url); mini.style.display = 'block'; }
@@ -694,8 +694,11 @@
     var storageUrls = link ? await C.getTourStorageImageUrls(link) : [];
     var urls = C.mergeTourImageUrls(Array.isArray(savedImages) ? savedImages : [], storageUrls);
     container.innerHTML = '';
-    if (!urls.length) createTourDetailImageSlot(container, 1);
-    else urls.forEach(function (url, i) { createTourDetailImageSlot(container, i + 1, withCacheBuster(url)); });
+    if (!urls.length) { createTourDetailImageSlot(container, 1); return; }
+    // Kutu numarası dosya adından gelir (image3.png -> 3); aradan silinen görseller numaraları kaydırmaz
+    var used = urls.map(function (url) { var m = String(url).split('?')[0].match(/\/image(\d+)\.png$/i); return m ? parseInt(m[1], 10) : 0; });
+    var next = Math.max.apply(null, used.concat([0]));
+    urls.forEach(function (url, i) { createTourDetailImageSlot(container, used[i] || ++next, withCacheBuster(url)); });
   }
 
   function showMapPreview(preview, url) {
@@ -1310,9 +1313,11 @@
 
     // ---------------- Yükleme ----------------
     async loadSavedContent() {
+      this.loaded = false;
+      this.loadError = null;
       try {
-        var content = await backend().getSiteContent();
-        if (!content) { console.warn('Site içerikleri yüklenemedi.'); return; }
+        // strict: okunamayan veri "boş" sayılmasın; yoksa Kaydet onu siler
+        var content = (await backend().getSiteContent(true)) || {};
         this.content = content;
 
         Object.keys(content).forEach(function (key) {
@@ -1320,9 +1325,9 @@
           if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && typeof content[key] === 'string') el.value = content[key];
         });
 
-        var orgs = await backend().getTransportOrgs();
+        var orgs = await backend().getTransportOrgs(true);
         if (orgs.length) loadTransportOrgs(orgs);
-        var fields = await backend().getFormFields();
+        var fields = await backend().getFormFields(true);
         if (fields.length) loadFormFields(fields);
         var descriptions = await backend().getOrgDescriptions();
         Object.keys(descriptions).forEach(function (name) { addOrgDescriptionOption(name, descriptions[name]); });
@@ -1340,22 +1345,48 @@
           addDefaultTransportServicesIfEmpty();
         }
 
-        var tours = await backend().getTours();
+        var tours = await backend().getTours(true);
         if (tours.length) loadTours(tours);
         var details = String(content.tourDetails || '').split('\n').filter(function (l) { return l.trim(); })
           .map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
         if (details.length) loadTourDetails(details);
 
-        await this.loadImagesFromStorage();
+        this.loaded = true;
+        // Görsel önizlemeleri kaydedilen veriyi etkilemez; hata verse de panel kullanılabilir
+        try { await this.loadImagesFromStorage(); } catch (imageError) { console.warn('Görsel önizlemeleri yüklenemedi:', imageError); }
       } catch (error) {
         console.error('Admin verileri yüklenemedi:', error);
+        this.loadError = error;
+        this.showLoadError();
       } finally {
         revealPage();
       }
     }
 
+    showLoadError() {
+      var box = $('successMessage');
+      if (!box) return;
+      box.style.cssText += 'display:block;background:#fdecea;color:#8a1c1c;border:1px solid #f5c2c0;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-weight:600;';
+      box.textContent = '⚠️ Panel verileri yüklenemedi. Veri kaybını önlemek için kaydetme kapatıldı; lütfen sayfayı yenileyin.';
+      clearTimeout(this.successTimer);
+    }
+
     // ---------------- Kaydetme ----------------
-    async saveChanges() {
+    /** Kaydetmeleri sıraya koyar: çift tıklama ya da görsel yüklemenin otomatik kaydı aynı anda çalışmaz. */
+    saveChanges() {
+      var self = this;
+      var run = (this.saveChain || Promise.resolve()).then(function () { return self.performSave(); });
+      this.saveChain = run.catch(function () {});
+      return run;
+    }
+
+    async performSave() {
+      if (!this.loaded) {
+        alert(this.loadError
+          ? '⚠️ Panel verileri yüklenemediği için kaydetme kapalı (mevcut verilerin silinmemesi için).\n\nLütfen sayfayı yenileyip tekrar deneyin.'
+          : 'Veriler henüz yükleniyor. Lütfen birkaç saniye sonra tekrar deneyin.');
+        return;
+      }
       try {
         window.syncOrgDescriptions({ silent: true });
         var field = function (id) { var el = $(id); return el ? el.value || '' : ''; };
@@ -1423,7 +1454,12 @@
       if (new Set(names).size !== names.length) throw new Error('Taşımacılık kurumlarında aynı isim birden fazla kez kullanılamaz');
       await backend().saveTransportOrgs(orgs);
 
-      var saved = await backend().getTransportOrgs();
+      var saved = await backend().getTransportOrgs(true);
+      document.querySelectorAll('#transportOrgsList > .list-item').forEach(function (card) {
+        var name = ((card.querySelector('.org-name') || {}).value || '').trim();
+        var row = saved.find(function (o) { return String(o.name || '').trim() === name; });
+        if (row) { card.dataset.orgId = String(row.id); card.dataset.originalName = name; }
+      });
       var expected = orgs.map(function (o) { return Object.assign(normalizeOrg(o), { id: o.id }); });
       var actual = saved.map(function (o) { return Object.assign(normalizeOrg(o), { id: String(o.id || '') }); });
       if (expected.length !== actual.length) {
@@ -1451,7 +1487,7 @@
           order_index: Number(f.order_index != null ? f.order_index : i) || 0
         };
       };
-      var saved = await backend().getFormFields();
+      var saved = await backend().getFormFields(true);
       if (JSON.stringify(fields.map(norm)) !== JSON.stringify(saved.map(norm))) {
         throw new Error('Form alanları kaydedildi ama backend doğrulaması eşleşmedi');
       }

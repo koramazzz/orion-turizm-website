@@ -102,7 +102,9 @@
       maxIndex = Math.max(0, total - perView);
       dots.innerHTML = '';
       for (var i = 0; i <= maxIndex; i++) {
-        var dot = el('span', 'review-dot');
+        var dot = el('button', 'review-dot');
+        dot.type = 'button';
+        dot.setAttribute('aria-label', (i + 1) + '. yorum grubuna git');
         dot.addEventListener('click', goTo.bind(null, i));
         dots.appendChild(dot);
       }
@@ -111,7 +113,10 @@
       var card = track.querySelector('.review-card');
       var offset = index * ((card ? card.offsetWidth : 0) + CARD_GAP);
       track.style.transform = 'translateX(-' + offset + 'px)';
-      Array.prototype.forEach.call(dots.children, function (dot, i) { dot.classList.toggle('active', i === index); });
+      Array.prototype.forEach.call(dots.children, function (dot, i) {
+        dot.classList.toggle('active', i === index);
+        if (i === index) dot.setAttribute('aria-current', 'true'); else dot.removeAttribute('aria-current');
+      });
       prev.disabled = index === 0;
       next.disabled = index >= maxIndex;
     };

@@ -60,7 +60,12 @@
   function bindChrome() {
     var toggle = document.querySelector('.nav-toggle');
     var nav = document.querySelector('.site-nav');
-    if (toggle && nav) toggle.addEventListener('click', function () { nav.classList.toggle('open'); });
+    if (toggle && nav) {
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.addEventListener('click', function () {
+        toggle.setAttribute('aria-expanded', String(nav.classList.toggle('open')));
+      });
+    }
 
     var header = document.querySelector('.site-header');
     if (header) {
@@ -79,17 +84,42 @@
     if (year) year.textContent = new Date().getFullYear();
 
     // Seçim modalları
-    var openModal = function (id) { var m = document.getElementById(id); if (m) m.setAttribute('aria-hidden', 'false'); };
+    var lastTrigger = null;
+    var openModal = function (id, trigger) {
+      var modal = document.getElementById(id);
+      if (!modal) return;
+      lastTrigger = trigger || document.activeElement;
+      modal.setAttribute('aria-hidden', 'false');
+      var target = modal.querySelector('select, .modal-actions a, .modal-actions button') || modal.querySelector('.modal-close');
+      if (target) target.focus();
+    };
+    var closeModal = function (modal) {
+      if (!modal || modal.getAttribute('aria-hidden') === 'true') return;
+      modal.setAttribute('aria-hidden', 'true');
+      if (lastTrigger && document.contains(lastTrigger)) lastTrigger.focus();
+      lastTrigger = null;
+    };
     ['routesModal', 'studentModal', 'factoryModal'].forEach(function (id) {
       var modal = document.getElementById(id);
       if (!modal) return;
+      var card = modal.querySelector('.modal-card');
+      var heading = card && card.querySelector('h3');
+      if (card) {
+        card.setAttribute('role', 'dialog');
+        card.setAttribute('aria-modal', 'true');
+        if (heading) { heading.id = heading.id || id + 'Title'; card.setAttribute('aria-labelledby', heading.id); }
+      }
       modal.querySelectorAll('[data-close]').forEach(function (el) {
-        el.addEventListener('click', function () { modal.setAttribute('aria-hidden', 'true'); });
+        el.addEventListener('click', function () { closeModal(modal); });
       });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('.modal[aria-hidden="false"]').forEach(closeModal);
     });
     [['navRoutes', 'routesModal'], ['navStudent', 'studentModal'], ['navFactory', 'factoryModal']].forEach(function (pair) {
       var trigger = document.getElementById(pair[0]);
-      if (trigger) trigger.addEventListener('click', function (e) { e.preventDefault(); openModal(pair[1]); });
+      if (trigger) trigger.addEventListener('click', function (e) { e.preventDefault(); openModal(pair[1], trigger); });
     });
     [['gotoStudent', 'schoolSelect', 'Lütfen bir okul seçin.'], ['gotoFactory', 'factorySelect', 'Lütfen bir fabrika seçin.']].forEach(function (cfg) {
       var button = document.getElementById(cfg[0]);
@@ -468,8 +498,22 @@
       customRouteForm: '🗺️ Orion Turizm — Yeni Özel Rota Talebi'
     };
 
+    var sending = false;
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (sending) return;
+      sending = true;
+      var submitButton = form.querySelector('[type="submit"]');
+      if (submitButton) submitButton.disabled = true;
+      try {
+        await submitForm();
+      } finally {
+        sending = false;
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+
+    async function submitForm() {
       status.textContent = 'Gönderiliyor...';
       var values = {};
       new FormData(form).forEach(function (value, key) { values[key] = value; });
@@ -505,7 +549,7 @@
       } else {
         status.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
       }
-    });
+    }
   }
 
   // -----------------------------------------------------------------
@@ -535,7 +579,9 @@
         dots.innerHTML = '';
         images.forEach(function (_, i) {
           var dot = document.createElement('button');
-          if (i === index) dot.classList.add('active');
+          dot.type = 'button';
+          dot.setAttribute('aria-label', (i + 1) + '. görsel');
+          if (i === index) { dot.classList.add('active'); dot.setAttribute('aria-current', 'true'); }
           dot.addEventListener('click', function () { index = i; render(); });
           dots.appendChild(dot);
         });
@@ -577,6 +623,44 @@
     });
   }
 
+  function showSection(el, visible) {
+    if (el) el.style.display = visible ? '' : 'none';
+  }
+
+  function setMetaDescription(text) {
+    var meta = document.querySelector('meta[name="description"]');
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'description'; document.head.appendChild(meta); }
+    meta.content = String(text).slice(0, 300);
+  }
+
+  /** Tur bulunamadı (ya da veriler yüklenemedi): örnek içerik yerine açık bir mesaj. */
+  function showTourMissing(dataLoaded) {
+    setText(document.getElementById('tourTitle'), dataLoaded ? 'Tur bulunamadı' : 'Tur bilgileri yüklenemedi');
+    var subtitle = document.getElementById('tourSubtitle');
+    if (subtitle) {
+      subtitle.textContent = dataLoaded
+        ? 'Aradığınız tur kaldırılmış ya da adresi değişmiş olabilir.'
+        : 'Bağlantı sorunu nedeniyle tur bilgileri alınamadı. Lütfen sayfayı yenileyin.';
+      var back = document.createElement('a');
+      back.className = 'btn btn-outline';
+      back.href = 'turlar.html';
+      back.textContent = 'Tüm Turlar';
+      var wrap = document.createElement('p');
+      wrap.appendChild(back);
+      subtitle.insertAdjacentElement('afterend', wrap);
+    }
+    document.title = (dataLoaded ? 'Tur bulunamadı' : 'Tur Detayı') + ' - Sakarya Orion Turizm';
+    if (dataLoaded) {
+      var robots = document.createElement('meta');
+      robots.name = 'robots';
+      robots.content = 'noindex';
+      document.head.appendChild(robots);
+    }
+    ['.map-section', '.gallery-section', '.tour-description', '#itinerary'].forEach(function (sel) {
+      showSection(document.querySelector(sel), false);
+    });
+  }
+
   async function renderTourDetail(content) {
     setFade(DETAIL_SECTIONS, false);
     var link = new URLSearchParams(location.search).get('tour');
@@ -584,11 +668,13 @@
       var details = content && content.tourDetails ? content.tourDetails.split('\n').filter(function (l) { return l.trim(); })
         .map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean) : [];
       var detail = link ? details.find(function (d) { return d.link === link; }) : null;
-      if (!detail) return;
+      if (!detail) { showTourMissing(Boolean(content)); return; }
 
       setText(document.getElementById('tourTitle'), detail.title || 'Tur Detayı');
       var subtitle = document.getElementById('tourSubtitle');
       if (subtitle) subtitle.textContent = detail.subtitle || '';
+      document.title = (detail.title || 'Tur Detayı') + ' - Sakarya Orion Turizm';
+      if (detail.subtitle) setMetaDescription(detail.subtitle);
 
       var mapImageUrl = await C.resolveTourMapImageUrl(link, detail.mapImage);
       var mapEl = document.getElementById('mapImage');
@@ -616,6 +702,7 @@
           img.src = url;
           gallery.appendChild(img);
         });
+        showSection(gallery.closest('.gallery-section'), urls.length > 0);
         var left = document.getElementById('tourGalleryScrollLeft');
         var right = document.getElementById('tourGalleryScrollRight');
         if (left && right) {
@@ -626,16 +713,18 @@
         }
       }
 
-      if (detail.description) {
-        fillList(document.getElementById('tourDescription'),
-          String(detail.description).split('\n').map(function (l) { return l.trim(); }).filter(Boolean), '8px');
-      }
-      if (detail.highlights && detail.highlights.length) {
-        fillList(document.getElementById('tourHighlights'), detail.highlights, '8px');
-      }
-      if (detail.itinerary && detail.itinerary.length) {
-        fillList(document.getElementById('itineraryList'), detail.itinerary, '12px', ' font-size: 1.1rem; line-height: 1.6;');
-      }
+      var points = String(detail.description || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      var highlights = Array.isArray(detail.highlights) ? detail.highlights.filter(Boolean) : [];
+      var itinerary = Array.isArray(detail.itinerary) ? detail.itinerary.filter(Boolean) : [];
+      var pointsList = document.getElementById('tourDescription');
+      fillList(pointsList, points, '8px');
+      showSection(pointsList, points.length > 0);
+      showSection(pointsList && pointsList.previousElementSibling, points.length > 0); // "Gezi Noktaları" başlığı
+      fillList(document.getElementById('tourHighlights'), highlights, '8px');
+      showSection(document.querySelector('.tour-description .highlights'), highlights.length > 0);
+      showSection(document.querySelector('.tour-description'), points.length > 0 || highlights.length > 0);
+      fillList(document.getElementById('itineraryList'), itinerary, '12px', ' font-size: 1.1rem; line-height: 1.6;');
+      showSection(document.getElementById('itinerary'), itinerary.length > 0);
     } catch (error) {
       console.error('Tur detay yükleme hatası:', error);
     } finally {
@@ -864,7 +953,7 @@
     var content = await data.siteContent();
     if (!content) { setFade(FADE_SECTIONS, true); return null; }
 
-    if (content.siteTitle) document.title = content.siteTitle;
+    if (content.siteTitle && isPage('index.html')) document.title = content.siteTitle;
     updateCards(content);
     var about = content.aboutText;
     if (about) {

@@ -41,6 +41,9 @@
 .loading-screen.hidden {
   opacity: 0;
   pointer-events: none;
+  /* görünmez olunca ekran okuyucular da "yükleniyor" yazısını okumasın */
+  visibility: hidden;
+  transition: opacity 0.5s ease-out, visibility 0s linear 0.5s;
 }
 
 .loading-spinner {
@@ -1591,6 +1594,8 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
 }
 
 .review-dot {
+  border: 0;
+  padding: 0;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -2162,3 +2167,6 @@ h3{font-size:1.1rem;margin:.2rem 0 .4rem}
   background: rgba(122, 28, 134, 0.12);
   color: var(--brand, #7a1c86);
 }
+
+/* Sadece ekran okuyucular ve arama motorları için metin */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
